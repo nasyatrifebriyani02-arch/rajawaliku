@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAJAWALIKU - Aplikasi Ekstrakurikuler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #111827; }
+        .font-brand { font-family: 'Playfair Display', serif; }
+        /* Simple scrollbar styling */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+
+    <div id="app" class="min-h-screen flex flex-col items-center justify-center p-4 transition-opacity duration-500">
+        <!-- Konten aplikasi akan dirender di sini oleh JavaScript -->
+    </div>
+
+    <script type="module">
+        // Import modul Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, getDocs, onSnapshot, updateDoc, deleteDoc, query, where, serverTimestamp, orderBy, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- KONFIGURASI DINAMIS (JANGAN DIUBAH) ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "dummy", authDomain: "dummy.firebaseapp.com", projectId: "dummy" };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-theater-app';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : undefined;
+
+        // Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- REFERENSI KOLEKSI ---
+        const membersCol = collection(db, `artifacts/${appId}/public/data/members`);
+        const scheduleCol = collection(db, `artifacts/${appId}/public/data/schedule`);
+        const attendanceCol = collection(db, `artifacts/${appId}/public/data/attendance`);
+        const forumCol = collection(db, `artifacts/${appId}/public/data/forum`);
+        const scriptsCol = collection(db, `artifacts/${appId}/public/data/scripts`);
+        const galleryCol = collection(db, `artifacts/${appId}/public/data/gallery`);
+        const announcementsCol = collection(db, `artifacts/${appId}/public/data/announcements`);
+
+
+        // --- STATE APLIKASI ---
+        let state = {
+            currentUser: null, // {id, nama, role, poin}
+            currentView: 'login',
+            members: [],
+            schedule: [],
+            attendance: [],
+            posts: [],
+            scripts: [],
+            gallery: [],
+            announcements: [],
+            selectedScript: null,
+            isLoading: true,
+            notification: { message: '', type: 'success' },
+            game: {
+                isActive: false,
+                score: 0,
+                timeLeft: 10,
+                timerId: null
+            }
+        };
+
+        // --- FUNGSI UTILITAS ---
+        function showNotification(message, type = 'success') {
+            state.notification = { message, type };
+            render();
+            setTimeout(() => {
+                state.notification.message = '';
+                render();
+            }, 3000);
+        }
+
+        // --- KOMPONEN UI / VIEWS ---
+        const UI = {
+            notification: () => {
+                if (!state.notification.message) return '';
+                const bgColor = state.notification.type === 'success' ? 'bg-green-600' : 'bg-red-600';
+                return `<div class="fixed top-5 right-5 ${bgColor} text-white py-2 px-4 rounded-md shadow-lg z-50">${state.notification.message}</div>`;
+            },
+            
+            login: () => `
+                <div class="bg-gray-800 border border-yellow-400/30 p-8 rounded-lg shadow-lg w-full max-w-sm text-center">
+                    <h1 class="font-brand text-5xl font-bold mb-2 text-yellow-400">RAJAWALIKU</h1>
+                    <p class="text-gray-400 mb-8">Masuk untuk mengelola ekstrakurikuler.</p>
+                    <form id="loginForm" class="space-y-4">
+                        <input type="text" id="username" name="username" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-yellow-400" placeholder="Username">
+                        <input type="password" id="password" name="password" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-yellow-400" placeholder="Password">
+                        <button type="submit" class="w-full bg-yellow-400 text-gray-900 font-bold py-3 px-4 rounded-md hover:bg-yellow-500 transition-colors">Masuk</button>
+                    </form>
+                    <p class="mt-6 text-gray-400">Belum punya akun? <a href="#" onclick="window.app.navigateTo('register')" class="text-yellow-400 hover:underline">Daftar di sini</a></p>
+                </div>
+            `,
+            
+            register: () => `
+                <div class="bg-gray-800 border border-yellow-400/30 p-8 rounded-lg shadow-lg w-full max-w-md">
+                    <h1 class="font-brand text-4xl font-bold mb-6 text-yellow-400 text-center">Daftar Anggota RAJAWALIKU</h1>
+                    <form id="registerForm" class="space-y-4">
+                        <input type="text" name="nama" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md" placeholder="Nama Lengkap">
+                        <input type="text" name="kelas" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md" placeholder="Kelas (Contoh: XI IPA 2)">
+                        <input type="text" name="kontak" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md" placeholder="Kontak (No. HP / ID Line)">
+                        <hr class="border-gray-600">
+                        <input type="text" name="username" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md" placeholder="Buat Username">
+                        <input type="password" name="password" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md" placeholder="Buat Password">
+                        <button type="submit" class="w-full bg-yellow-400 text-gray-900 font-bold py-3 px-4 rounded-md hover:bg-yellow-500">Daftar</button>
+                    </form>
+                    <p class="mt-6 text-center text-gray-400">Sudah punya akun? <a href="#" onclick="window.app.navigateTo('login')" class="text-yellow-400 hover:underline">Masuk di sini</a></p>
+                </div>
+            `,
+
+            dashboard: (title, content) => `
+                <div class="w-full max-w-7xl mx-auto">
+                    <header class="bg-gray-800 p-4 rounded-lg shadow-lg mb-6 flex justify-between items-center border border-yellow-400/30">
+                        <div>
+                            <h1 class="font-brand text-3xl font-bold text-yellow-400">${title}</h1>
+                            <p class="text-gray-400">Selamat datang, ${state.currentUser.nama}!</p>
+                        </div>
+                         <div class="flex items-center space-x-4">
+                            ${state.currentUser.role === 'user' ? `<div class="bg-yellow-400 text-gray-900 font-bold py-2 px-4 rounded-lg">Poin: ${state.currentUser.poin || 0}</div>` : ''}
+                            <button onclick="window.app.logout()" class="bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-700">Keluar</button>
+                        </div>
+                    </header>
+                    <main class="bg-gray-800 p-6 rounded-lg shadow-lg border border-yellow-400/30 min-h-[60vh]">
+                        ${content}
+                    </main>
+                </div>
+            `,
+            
+            adminDashboard: () => {
+                const content = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div onclick="window.app.navigateTo('manageMembers')" class="bg-gray-700 p-6 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                            <h2 class="text-xl font-semibold text-yellow-400">Data Anggota</h2>
+                        </div>
+                        <div onclick="window.app.navigateTo('manageSchedule')" class="bg-gray-700 p-6 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                            <h2 class="text-xl font-semibold text-yellow-400">Kelola Jadwal</h2>
+                        </div>
+                         <div onclick="window.app.navigateTo('manageAnnouncements')" class="bg-gray-700 p-6 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                            <h2 class="text-xl font-semibold text-yellow-400">Kelola Pengumuman</h2>
+                        </div>
+                        <div onclick="window.app.navigateTo('viewAttendance')" class="bg-gray-700 p-6 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                            <h2 class="text-xl font-semibold text-yellow-400">Rekap Absensi</h2>
+                        </div>
+                         <div onclick="window.app.navigateTo('manageScripts')" class="bg-gray-700 p-6 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                            <h2 class="text-xl font-semibold text-yellow-400">Kelola Jendela Naskah</h2>
+                        </div>
+                        <div onclick="window.app.navigateTo('manageGallery')" class="bg-gray-700 p-6 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                            <h2 class="text-xl font-semibold text-yellow-400">Kelola Galeri</h2>
+                        </div>
+                         <div onclick="window.app.navigateTo('forum')" class="bg-gray-700 p-6 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                            <h2 class="text-xl font-semibold text-yellow-400">Forum Diskusi</h2>
+                        </div>
+                    </div>`;
+                return UI.dashboard('Dashboard Admin', content);
+            },
+            
+            userDashboard: () => {
+                const content = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                         <div onclick="window.app.navigateTo('viewAnnouncements')" class="bg-gray-700 p-6 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                            <h2 class="text-xl font-semibold text-yellow-400">Pengumuman</h2>
+                        </div>
+                        <div onclick="window.app.navigateTo('viewSchedule')" class="bg-gray-700 p-6 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                            <h2 class="text-xl font-semibold text-yellow-400">Jadwal Kegiatan</h2>
+                        </div>
+                        <div onclick="window.app.navigateTo('fillAttendance')" class="bg-gray-700 p-6 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                            <h2 class="text-xl font-semibold text-yellow-400">Absen Anggota</h2>
+                        </div>
+                        <div onclick="window.app.navigateTo('forum')" class="bg-gray-700 p-6 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                            <h2 class="text-xl font-semibold text-yellow-400">Forum Diskusi</h2>
+                        </div>
+                        <div onclick="window.app.navigateTo('viewScripts')" class="bg-gray-700 p-6 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                            <h2 class="text-xl font-semibold text-yellow-400">Jendela Naskah</h2>
+                        </div>
+                        <div onclick="window.app.navigateTo('viewGallery')" class="bg-gray-700 p-6 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                            <h2 class="text-xl font-semibold text-yellow-400">Galeri</h2>
+                        </div>
+                         <div onclick="window.app.navigateTo('game')" class="bg-yellow-600 p-6 rounded-md text-center cursor-pointer hover:bg-yellow-500 border border-yellow-500 col-span-1 md:col-span-2 lg:col-span-3">
+                            <h2 class="text-xl font-semibold text-white">Mainkan Game & Dapatkan Poin!</h2>
+                        </div>
+                    </div>`;
+                return UI.dashboard('Dashboard Anggota', content);
+            },
+            
+            backButton: (targetView) => `<button onclick="window.app.navigateTo('${targetView}')" class="mb-4 bg-gray-600 text-gray-200 font-bold py-2 px-4 rounded-md hover:bg-gray-500">&larr; Kembali</button>`,
+
+            manageMembers: () => {
+                const memberRows = state.members.map(member => `
+                    <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                        <td class="p-3">${member.nama}</td>
+                        <td class="p-3">${member.kelas}</td>
+                        <td class="p-3">${member.poin || 0}</td>
+                        <td class="p-3"><span class="px-2 py-1 text-xs font-semibold rounded-full ${member.aktif ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}">${member.aktif ? 'Aktif' : 'Non-Aktif'}</span></td>
+                        <td class="p-3 space-x-2 flex">
+                            <button onclick="window.app.addPoints('${member.id}', 5)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-md text-xs">+5 Poin</button>
+                            <button onclick="window.app.toggleMemberStatus('${member.id}', ${!member.aktif})" class="text-white font-bold py-1 px-3 rounded-md text-xs ${member.aktif ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}">${member.aktif ? 'Non-Aktifkan' : 'Aktifkan'}</button>
+                        </td>
+                    </tr>`).join('');
+                const content = `
+                    ${UI.backButton('adminDashboard')}
+                    <h2 class="text-2xl font-bold text-white mb-4">Data Anggota Teater</h2>
+                    <div class="overflow-x-auto"><table class="w-full text-left">
+                        <thead class="bg-gray-700"><tr>
+                            <th class="p-3">Nama</th><th class="p-3">Kelas</th><th class="p-3">Poin</th><th class="p-3">Status</th><th class="p-3">Aksi</th>
+                        </tr></thead>
+                        <tbody>${state.members.length > 0 ? memberRows : '<tr><td colspan="5" class="p-3 text-center text-gray-400">Belum ada anggota terdaftar.</td></tr>'}</tbody>
+                    </table></div>`;
+                return UI.dashboard('Kelola Anggota', content);
+            },
+            
+            manageSchedule: () => {
+                const scheduleList = state.schedule.map(k => `
+                    <div class="border border-gray-700 p-4 rounded-md bg-gray-900 flex justify-between items-start">
+                        <div>
+                            <p class="font-bold text-lg text-yellow-400">${k.nama}</p>
+                            <p class="text-sm text-gray-400">${new Date(k.tanggal.seconds * 1000).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                            <p class="mt-2 text-gray-300">${k.deskripsi}</p>
+                        </div>
+                        <button onclick="window.app.deleteSchedule('${k.id}')" class="bg-red-800 text-white font-bold py-1 px-2 text-xs rounded-md hover:bg-red-700">&times;</button>
+                    </div>`).join('');
+                const content = `
+                    ${UI.backButton('adminDashboard')}
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white mb-4">Buat Jadwal Baru</h2>
+                            <form id="scheduleForm" class="space-y-4">
+                                <input type="text" name="nama" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md" placeholder="Nama Kegiatan">
+                                <input type="datetime-local" name="tanggal" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md">
+                                <textarea name="deskripsi" rows="3" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md" placeholder="Deskripsi Singkat"></textarea>
+                                <button type="submit" class="w-full bg-yellow-400 text-gray-900 font-bold py-3 rounded-md hover:bg-yellow-500">Tambah Jadwal</button>
+                            </form>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-white mb-4">Jadwal Mendatang</h2>
+                            <div class="space-y-4 max-h-96 overflow-y-auto pr-2">${state.schedule.length > 0 ? scheduleList : '<p class="text-gray-400">Belum ada jadwal dibuat.</p>'}</div>
+                        </div>
+                    </div>`;
+                return UI.dashboard('Kelola Jadwal', content);
+            },
+
+            viewSchedule: () => {
+                const scheduleList = state.schedule.map(k => `
+                    <div class="border-l-4 border-yellow-400 pl-4 py-2 bg-gray-800/50">
+                        <p class="font-bold text-lg text-white">${k.nama}</p>
+                        <p class="text-sm text-yellow-300">${new Date(k.tanggal.seconds * 1000).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                        <p class="mt-1 text-gray-300">${k.deskripsi}</p>
+                    </div>`).join('');
+                const content = `
+                    ${UI.backButton('userDashboard')}
+                    <h2 class="text-2xl font-bold text-white mb-6">Jadwal Kegiatan 1 Bulan ke Depan</h2>
+                    <div class="space-y-6">${state.schedule.length > 0 ? scheduleList : '<p class="text-gray-400 text-center">Belum ada jadwal kegiatan.</p>'}</div>`;
+                return UI.dashboard('Jadwal Kegiatan', content);
+            },
+
+            fillAttendance: () => {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const upcomingSchedule = state.schedule.filter(s => s.tanggal.seconds * 1000 >= today.getTime());
+                const scheduleOptions = upcomingSchedule.map(s => `<option value="${s.id}">${s.nama} - ${new Date(s.tanggal.seconds * 1000).toLocaleDateString('id-ID')}</option>`).join('');
+                
+                const content = `
+                    ${UI.backButton('userDashboard')}
+                    <div class="max-w-md mx-auto">
+                        <h2 class="text-2xl font-bold text-white mb-4 text-center">Formulir Absensi Kehadiran</h2>
+                        <form id="attendanceForm" class="space-y-4 bg-gray-900 p-6 rounded-lg">
+                            <p class="text-gray-300">Nama: <span class="font-bold text-yellow-400">${state.currentUser.nama}</span></p>
+                            <select name="scheduleId" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md">
+                                <option value="">-- Pilih Kegiatan --</option>
+                                ${scheduleOptions}
+                            </select>
+                            <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 rounded-md hover:bg-green-700">Konfirmasi Kehadiran (+5 Poin)</button>
+                        </form>
+                    </div>`;
+                return UI.dashboard('Isi Absensi', content);
+            },
+
+            viewAttendance: () => {
+                const scheduleOptions = state.schedule.map(s => `<option value="${s.id}">${s.nama} - ${new Date(s.tanggal.seconds * 1000).toLocaleDateString('id-ID')}</option>`).join('');
+                const content = `
+                    ${UI.backButton('adminDashboard')}
+                    <h2 class="text-2xl font-bold text-white mb-4">Rekap Absensi Anggota</h2>
+                    <select id="scheduleFilter" class="w-full md:w-1/2 p-3 bg-gray-700 border border-gray-600 rounded-md mb-6">
+                        <option value="">-- Pilih Kegiatan untuk Melihat Absensi --</option>
+                        ${scheduleOptions}
+                    </select>
+                    <div id="attendanceList" class="overflow-x-auto">
+                        <p class="text-gray-400">Silakan pilih kegiatan untuk menampilkan data.</p>
+                    </div>`;
+                return UI.dashboard('Rekap Absensi', content);
+            },
+
+            forum: () => {
+                const posts = state.posts.map(p => `
+                    <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                        <p class="text-gray-300">${p.content}</p>
+                        <p class="text-xs text-gray-500 mt-2">-- oleh <span class="font-semibold text-yellow-400">${p.authorName}</span> pada ${new Date(p.createdAt.seconds * 1000).toLocaleString('id-ID')}</p>
+                    </div>`).join('');
+                const content = `
+                    ${UI.backButton(state.currentUser.role === 'admin' ? 'adminDashboard' : 'userDashboard')}
+                    <h2 class="text-2xl font-bold text-white mb-4">Forum Diskusi</h2>
+                    <div class="grid md:grid-cols-3 gap-8">
+                        <div class="md:col-span-2">
+                            <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">${state.posts.length > 0 ? posts : '<p class="text-gray-400">Belum ada diskusi. Mulai yang pertama!</p>'}</div>
+                        </div>
+                        <div>
+                            <form id="forumForm" class="space-y-3">
+                                <h3 class="font-semibold text-lg text-white">Mulai Diskusi Baru</h3>
+                                <textarea name="content" required rows="4" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md" placeholder="Tulis idemu di sini..."></textarea>
+                                <button type="submit" class="w-full bg-yellow-400 text-gray-900 font-bold py-2 rounded-md hover:bg-yellow-500">Kirim</button>
+                            </form>
+                        </div>
+                    </div>`;
+                return UI.dashboard('Forum', content);
+            },
+
+            manageScripts: () => {
+                const scriptList = state.scripts.map(s => `
+                    <div class="border border-gray-700 p-3 rounded-md bg-gray-900 flex justify-between items-center">
+                        <p class="font-semibold text-yellow-400">${s.title}</p>
+                        <button onclick="window.app.deleteScript('${s.id}')" class="bg-red-800 text-white font-bold py-1 px-2 text-xs rounded-md hover:bg-red-700">&times;</button>
+                    </div>`).join('');
+                const content = `
+                    ${UI.backButton('adminDashboard')}
+                     <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white mb-4">Tambah Naskah Baru</h2>
+                            <form id="scriptForm" class="space-y-4">
+                                <input type="text" name="title" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md" placeholder="Judul Naskah">
+                                <label class="block text-sm font-medium text-gray-400">Unggah File Naskah (.txt)</label>
+                                <input type="file" name="scriptFile" required accept=".txt,.md" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-400 file:text-gray-900 hover:file:bg-yellow-500">
+                                <button type="submit" class="w-full bg-yellow-400 text-gray-900 font-bold py-3 rounded-md hover:bg-yellow-500">Simpan Naskah</button>
+                            </form>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-white mb-4">Daftar Naskah</h2>
+                            <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">${state.scripts.length > 0 ? scriptList : '<p class="text-gray-400">Belum ada naskah.</p>'}</div>
+                        </div>
+                    </div>`;
+                return UI.dashboard('Kelola Jendela Naskah', content);
+            },
+
+            viewScripts: () => {
+                if (state.selectedScript) {
+                    return UI.viewScriptDetail();
+                }
+                const scriptList = state.scripts.map(s => `
+                    <div onclick="window.app.selectScript('${s.id}')" class="bg-gray-700 p-4 rounded-md text-center cursor-pointer hover:bg-gray-600 border border-gray-600">
+                        <h3 class="text-lg font-semibold text-yellow-400">${s.title}</h3>
+                    </div>`).join('');
+                const content = `
+                    ${UI.backButton('userDashboard')}
+                    <h2 class="text-2xl font-bold text-white mb-6 text-center">Pilih Naskah untuk Dibaca</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${state.scripts.length > 0 ? scriptList : '<p class="col-span-full text-center text-gray-400">Belum ada naskah yang tersedia.</p>'}</div>`;
+                return UI.dashboard('Jendela Naskah', content);
+            },
+            
+            viewScriptDetail: () => {
+                const content = `
+                    <button onclick="window.app.selectScript(null)" class="mb-4 bg-gray-600 text-gray-200 font-bold py-2 px-4 rounded-md hover:bg-gray-500">&larr; Kembali ke Daftar Naskah</button>
+                    <h2 class="font-brand text-3xl font-bold text-yellow-400 mb-4">${state.selectedScript.title}</h2>
+                    <div class="bg-gray-900 p-4 rounded-md whitespace-pre-wrap max-h-[60vh] overflow-y-auto text-gray-300">${state.selectedScript.content}</div>
+                `;
+                return UI.dashboard('Detail Naskah', content);
+            },
+
+            manageGallery: () => {
+                const imageList = state.gallery.map(g => `
+                     <div class="relative group">
+                        <img src="${g.imageUrl}" alt="${g.caption}" class="w-full h-40 object-cover rounded-md">
+                        <div class="absolute inset-0 bg-black/60 flex flex-col justify-between p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <p class="text-xs text-white">${g.caption}</p>
+                            <button onclick="window.app.deleteImage('${g.id}')" class="self-end bg-red-600 text-white rounded-full w-6 h-6 text-xs">&times;</button>
+                        </div>
+                    </div>`).join('');
+
+                const content = `
+                    ${UI.backButton('adminDashboard')}
+                    <div class="grid md:grid-cols-3 gap-8">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white mb-4">Tambah Foto Baru</h2>
+                            <form id="galleryForm" class="space-y-4">
+                                <label class="block text-sm font-medium text-gray-400">Unggah File Gambar</label>
+                                <input type="file" name="imageFile" required accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-400 file:text-gray-900 hover:file:bg-yellow-500">
+                                <input type="text" name="caption" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md" placeholder="Keterangan singkat">
+                                <button type="submit" class="w-full bg-yellow-400 text-gray-900 font-bold py-3 rounded-md hover:bg-yellow-500">Tambah ke Galeri</button>
+                            </form>
+                        </div>
+                        <div class="md:col-span-2">
+                             <h2 class="text-2xl font-bold text-white mb-4">Isi Galeri</h2>
+                             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto pr-2">${state.gallery.length > 0 ? imageList : '<p class="col-span-full text-gray-400">Galeri masih kosong.</p>'}</div>
+                        </div>
+                    </div>`;
+                return UI.dashboard('Kelola Galeri', content);
+            },
+            
+            viewGallery: () => {
+                 const imageList = state.gallery.map(g => `
+                     <div class="relative group rounded-md overflow-hidden">
+                        <img src="${g.imageUrl}" alt="${g.caption}" class="w-full h-56 object-cover transition-transform group-hover:scale-105">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <p class="absolute bottom-0 left-0 p-3 text-white font-semibold">${g.caption}</p>
+                    </div>`).join('');
+                const content = `
+                    ${UI.backButton('userDashboard')}
+                    <h2 class="text-2xl font-bold text-white mb-6 text-center">Galeri Dokumentasi Kegiatan</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        ${state.gallery.length > 0 ? imageList : '<p class="col-span-full text-center text-gray-400">Belum ada dokumentasi.</p>'}
+                    </div>`;
+                return UI.dashboard('Galeri', content);
+            },
+
+            manageAnnouncements: () => {
+                const announcementList = state.announcements.map(a => `
+                    <div class="border border-gray-700 p-3 rounded-md bg-gray-900 flex justify-between items-start">
+                        <div>
+                           <p class="font-semibold text-yellow-400">${a.title}</p>
+                           <p class="text-sm text-gray-300 mt-1">${a.content}</p>
+                        </div>
+                        <button onclick="window.app.deleteAnnouncement('${a.id}')" class="bg-red-800 text-white font-bold py-1 px-2 text-xs rounded-md hover:bg-red-700">&times;</button>
+                    </div>`).join('');
+                const content = `
+                    ${UI.backButton('adminDashboard')}
+                     <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white mb-4">Buat Pengumuman Baru</h2>
+                            <form id="announcementForm" class="space-y-4">
+                                <input type="text" name="title" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md" placeholder="Judul Pengumuman">
+                                <textarea name="content" rows="5" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md" placeholder="Isi pengumuman..."></textarea>
+                                <button type="submit" class="w-full bg-yellow-400 text-gray-900 font-bold py-3 rounded-md hover:bg-yellow-500">Publikasikan</button>
+                            </form>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-white mb-4">Daftar Pengumuman</h2>
+                            <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">${state.announcements.length > 0 ? announcementList : '<p class="text-gray-400">Belum ada pengumuman.</p>'}</div>
+                        </div>
+                    </div>`;
+                return UI.dashboard('Kelola Pengumuman', content);
+            },
+
+            viewAnnouncements: () => {
+                 const announcementList = state.announcements.map(a => `
+                     <div class="border-l-4 border-yellow-400 pl-4 py-2 bg-gray-800/50">
+                        <h3 class="font-bold text-lg text-white">${a.title}</h3>
+                        <p class="mt-1 text-gray-300">${a.content}</p>
+                        <p class="text-xs text-gray-500 mt-2">Diterbitkan pada ${new Date(a.createdAt.seconds * 1000).toLocaleString('id-ID')}</p>
+                    </div>`).join('');
+                const content = `
+                    ${UI.backButton('userDashboard')}
+                    <h2 class="text-2xl font-bold text-white mb-6 text-center">Papan Pengumuman</h2>
+                    <div class="space-y-6">
+                        ${state.announcements.length > 0 ? announcementList : '<p class="text-center text-gray-400">Tidak ada pengumuman saat ini.</p>'}
+                    </div>`;
+                return UI.dashboard('Pengumuman', content);
+            },
+            
+            game: () => {
+                const { isActive, score, timeLeft } = state.game;
+                let gameContent = '';
+
+                if (isActive) {
+                    gameContent = `
+                        <div class="text-center">
+                            <h3 class="text-2xl font-bold text-white">Sisa Waktu: <span class="text-yellow-400 text-3xl">${timeLeft}</span></h3>
+                            <p class="text-6xl font-bold my-8">${score}</p>
+                            <button id="clickerButton" class="bg-yellow-400 text-gray-900 font-bold py-6 px-12 rounded-full transform transition-transform hover:scale-110 active:scale-95">KLIK AKU!</button>
+                        </div>
+                    `;
+                } else {
+                     gameContent = `
+                        <div class="text-center">
+                            <h3 class="text-2xl font-bold text-white">Game Klik Cepat</h3>
+                            <p class="text-gray-400 mt-2 mb-8">Dapatkan poin sebanyak-banyaknya dalam 10 detik!</p>
+                            <button id="startGameButton" class="bg-green-600 text-white font-bold py-3 px-8 rounded-md hover:bg-green-700">Mulai Bermain</button>
+                        </div>
+                    `;
+                }
+                const content = `
+                    ${UI.backButton('userDashboard')}
+                    <div class="flex items-center justify-center h-full min-h-[50vh]">
+                        ${gameContent}
+                    </div>
+                `;
+                return UI.dashboard('Arena Bermain', content);
+            },
+        };
+
+        // --- RENDER FUNCTION ---
+        function render() {
+            const appContainer = document.getElementById('app');
+            appContainer.innerHTML = UI.notification();
+
+            let viewHtml = '';
+            if (state.isLoading) {
+                viewHtml = `<div class="text-yellow-400 font-brand text-2xl animate-pulse">Memuat Aplikasi RAJAWALIKU...</div>`;
+            } else {
+                switch (state.currentView) {
+                    case 'login': viewHtml = UI.login(); break;
+                    case 'register': viewHtml = UI.register(); break;
+                    case 'adminDashboard': viewHtml = UI.adminDashboard(); break;
+                    case 'userDashboard': viewHtml = UI.userDashboard(); break;
+                    case 'manageMembers': viewHtml = UI.manageMembers(); break;
+                    case 'manageSchedule': viewHtml = UI.manageSchedule(); break;
+                    case 'viewSchedule': viewHtml = UI.viewSchedule(); break;
+                    case 'fillAttendance': viewHtml = UI.fillAttendance(); break;
+                    case 'viewAttendance': viewHtml = UI.viewAttendance(); break;
+                    case 'forum': viewHtml = UI.forum(); break;
+                    case 'manageScripts': viewHtml = UI.manageScripts(); break;
+                    case 'viewScripts': viewHtml = UI.viewScripts(); break;
+                    case 'manageGallery': viewHtml = UI.manageGallery(); break;
+                    case 'viewGallery': viewHtml = UI.viewGallery(); break;
+                    case 'manageAnnouncements': viewHtml = UI.manageAnnouncements(); break;
+                    case 'viewAnnouncements': viewHtml = UI.viewAnnouncements(); break;
+                    case 'game': viewHtml = UI.game(); break;
+                    default: viewHtml = UI.login();
+                }
+            }
+            appContainer.innerHTML += viewHtml;
+            attachEventListeners();
+        }
+
+        // --- EVENT LISTENERS ---
+        function attachEventListeners() {
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) loginForm.addEventListener('submit', handleLogin);
+
+            const registerForm = document.getElementById('registerForm');
+            if (registerForm) registerForm.addEventListener('submit', handleRegister);
+            
+            const scheduleForm = document.getElementById('scheduleForm');
+            if (scheduleForm) scheduleForm.addEventListener('submit', handleAddSchedule);
+
+            const attendanceForm = document.getElementById('attendanceForm');
+            if (attendanceForm) attendanceForm.addEventListener('submit', handleFillAttendance);
+
+            const scheduleFilter = document.getElementById('scheduleFilter');
+            if (scheduleFilter) scheduleFilter.addEventListener('change', handleFilterAttendance);
+
+            const forumForm = document.getElementById('forumForm');
+            if(forumForm) forumForm.addEventListener('submit', handleAddPost);
+
+            const scriptForm = document.getElementById('scriptForm');
+            if(scriptForm) scriptForm.addEventListener('submit', handleAddScript);
+            
+            const galleryForm = document.getElementById('galleryForm');
+            if(galleryForm) galleryForm.addEventListener('submit', handleAddImage);
+
+            const announcementForm = document.getElementById('announcementForm');
+            if(announcementForm) announcementForm.addEventListener('submit', handleAddAnnouncement);
+
+            const startGameButton = document.getElementById('startGameButton');
+            if (startGameButton) startGameButton.addEventListener('click', startGame);
+
+            const clickerButton = document.getElementById('clickerButton');
+            if (clickerButton) clickerButton.addEventListener('click', handleGameClick);
+        }
+
+        // --- HANDLER FUNCTIONS ---
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = e.target.username.value.trim().toLowerCase();
+            const password = e.target.password.value;
+
+            if (username === 'admin' && password === 'admin123') {
+                state.currentUser = { id: 'admin', nama: 'Admin', role: 'admin' };
+                state.currentView = 'adminDashboard';
+                render();
+                return;
+            }
+
+            const q = query(membersCol, where("username", "==", username));
+            const querySnapshot = await getDocs(q);
+            if (querySnapshot.empty) {
+                showNotification("Username tidak ditemukan.", "error"); return;
+            }
+            
+            let userFound = false;
+            querySnapshot.forEach(doc => {
+                const user = { id: doc.id, ...doc.data() };
+                if (user.password === password) {
+                    if (!user.aktif) {
+                        showNotification("Akun Anda tidak aktif. Hubungi admin.", "error");
+                        userFound = true; return;
+                    }
+                    state.currentUser = { ...user, role: 'user' };
+                    state.currentView = 'userDashboard';
+                    userFound = true;
+                }
+            });
+
+            if (userFound) render();
+            else showNotification("Password salah.", "error");
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            data.username = data.username.trim().toLowerCase();
+            
+            const q = query(membersCol, where("username", "==", data.username));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                showNotification("Username sudah digunakan.", "error"); return;
+            }
+
+            try {
+                await addDoc(membersCol, {
+                    ...data,
+                    aktif: true,
+                    role: 'user',
+                    poin: 0,
+                    createdAt: serverTimestamp()
+                });
+                showNotification("Pendaftaran berhasil! Silakan masuk.", "success");
+                state.currentView = 'login';
+                render();
+            } catch (error) {
+                showNotification("Gagal mendaftar.", "error");
+            }
+        }
+        
+        async function handleFillAttendance(e) {
+            e.preventDefault();
+            const scheduleId = e.target.scheduleId.value;
+            if (!scheduleId) {
+                showNotification("Pilih kegiatan terlebih dahulu.", "error"); return;
+            }
+            
+            const q = query(attendanceCol, where("memberId", "==", state.currentUser.id), where("scheduleId", "==", scheduleId));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                showNotification("Anda sudah mengisi absensi untuk kegiatan ini.", "error"); return;
+            }
+
+            try {
+                await addDoc(attendanceCol, {
+                    memberId: state.currentUser.id,
+                    memberName: state.currentUser.nama,
+                    scheduleId: scheduleId,
+                    timestamp: serverTimestamp()
+                });
+                const memberDoc = doc(db, `artifacts/${appId}/public/data/members/${state.currentUser.id}`);
+                await updateDoc(memberDoc, { poin: increment(5) });
+                state.currentUser.poin += 5;
+                
+                showNotification("Kehadiran berhasil dicatat! (+5 Poin)", "success");
+                e.target.reset();
+                render();
+            } catch (error) {
+                showNotification("Gagal mencatat kehadiran.", "error");
+            }
+        }
+
+        async function handleAddSchedule(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            try {
+                await addDoc(scheduleCol, {
+                    nama: formData.get('nama'),
+                    tanggal: new Date(formData.get('tanggal')),
+                    deskripsi: formData.get('deskripsi'),
+                    createdAt: serverTimestamp()
+                });
+                showNotification("Jadwal berhasil ditambahkan.", "success");
+                e.target.reset();
+            } catch (error) {
+                showNotification("Gagal menambahkan jadwal.", "error");
+            }
+        }
+        
+        async function handleFilterAttendance(e) {
+            const scheduleId = e.target.value;
+            const listContainer = document.getElementById('attendanceList');
+            if (!scheduleId) {
+                listContainer.innerHTML = '<p class="text-gray-400">Silakan pilih kegiatan untuk menampilkan data.</p>';
+                return;
+            }
+
+            const q = query(attendanceCol, where("scheduleId", "==", scheduleId));
+            onSnapshot(q, (snapshot) => {
+                if (snapshot.empty) {
+                    listContainer.innerHTML = '<p class="text-gray-400">Belum ada anggota yang absen untuk kegiatan ini.</p>';
+                    return;
+                }
+                const attendees = snapshot.docs.map(doc => doc.data());
+                const tableRows = attendees.map(a => `
+                    <tr class="border-b border-gray-700">
+                        <td class="p-3">${a.memberName}</td>
+                        <td class="p-3">${new Date(a.timestamp.seconds * 1000).toLocaleString('id-ID')}</td>
+                    </tr>`).join('');
+                
+                listContainer.innerHTML = `
+                    <table class="w-full text-left"><thead class="bg-gray-700"><tr>
+                        <th class="p-3">Nama Anggota</th><th class="p-3">Waktu Absen</th>
+                    </tr></thead><tbody>${tableRows}</tbody></table>`;
+            });
+        }
+        
+        async function addPoints(memberId, amount) {
+            const memberDoc = doc(db, `artifacts/${appId}/public/data/members/${memberId}`);
+            try {
+                await updateDoc(memberDoc, { poin: increment(amount) });
+                showNotification(`Berhasil menambahkan ${amount} poin.`, "success");
+            } catch (error) {
+                 showNotification("Gagal menambah poin.", "error");
+            }
+        }
+
+        async function handleAddPost(e){
+            e.preventDefault();
+            const content = e.target.content.value.trim();
+            if(!content) return;
+            try {
+                await addDoc(forumCol, {
+                    content: content,
+                    authorId: state.currentUser.id,
+                    authorName: state.currentUser.nama,
+                    createdAt: serverTimestamp()
+                });
+                e.target.reset();
+            } catch(error){
+                showNotification("Gagal mengirim postingan.", "error");
+            }
+        }
+
+        function handleAddScript(e){
+            e.preventDefault();
+            const title = e.target.title.value;
+            const file = e.target.scriptFile.files[0];
+            if (!file) {
+                showNotification("Silakan pilih file naskah.", "error");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const content = event.target.result;
+                try {
+                    await addDoc(scriptsCol, {
+                        title: title,
+                        content: content,
+                        createdAt: serverTimestamp()
+                    });
+                    showNotification("Naskah berhasil disimpan.", "success");
+                    e.target.reset();
+                } catch(error) {
+                    showNotification("Gagal menyimpan naskah.", "error");
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        async function deleteScript(id) {
+            if (window.confirm("Yakin ingin menghapus naskah ini?")) {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/scripts/${id}`));
+                showNotification("Naskah dihapus.", "success");
+            }
+        }
+
+        function handleAddImage(e){
+            e.preventDefault();
+            const caption = e.target.caption.value;
+            const file = e.target.imageFile.files[0];
+            if (!file) {
+                showNotification("Silakan pilih file gambar.", "error");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const imageUrl = event.target.result;
+                try {
+                    await addDoc(galleryCol, {
+                        imageUrl: imageUrl, // Base64 string
+                        caption: caption,
+                        uploadedAt: serverTimestamp()
+                    });
+                    showNotification("Foto berhasil ditambahkan.", "success");
+                    e.target.reset();
+                } catch(error) {
+                    showNotification("Gagal menambahkan foto.", "error");
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function deleteImage(id) {
+            if (window.confirm("Yakin ingin menghapus foto ini?")) {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/gallery/${id}`));
+                showNotification("Foto dihapus.", "success");
+            }
+        }
+
+        async function handleAddAnnouncement(e){
+             e.preventDefault();
+            const formData = new FormData(e.target);
+            try {
+                await addDoc(announcementsCol, {
+                    title: formData.get('title'),
+                    content: formData.get('content'),
+                    createdAt: serverTimestamp()
+                });
+                showNotification("Pengumuman berhasil dipublikasikan.", "success");
+                e.target.reset();
+            } catch(error) {
+                showNotification("Gagal mempublikasikan pengumuman.", "error");
+            }
+        }
+
+        async function deleteAnnouncement(id){
+            if (window.confirm("Yakin ingin menghapus pengumuman ini?")) {
+                 await deleteDoc(doc(db, `artifacts/${appId}/public/data/announcements/${id}`));
+                showNotification("Pengumuman dihapus.", "success");
+            }
+        }
+
+        async function toggleMemberStatus(memberId, newStatus) {
+            const memberDoc = doc(db, `artifacts/${appId}/public/data/members/${memberId}`);
+            await updateDoc(memberDoc, { aktif: newStatus });
+            showNotification(`Status anggota berhasil diubah.`, "success");
+        }
+
+        async function deleteSchedule(scheduleId) {
+            if (window.confirm("Apakah Anda yakin ingin menghapus jadwal ini?")) {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/schedule/${scheduleId}`));
+                showNotification("Jadwal berhasil dihapus.", "success");
+            }
+        }
+
+        function selectScript(scriptId) {
+            if (!scriptId) {
+                state.selectedScript = null;
+            } else {
+                state.selectedScript = state.scripts.find(s => s.id === scriptId);
+            }
+            render();
+        }
+
+        function logout() {
+            state.currentUser = null;
+            state.currentView = 'login';
+            state.selectedScript = null;
+            render();
+        }
+
+        // --- GAME FUNCTIONS ---
+        function startGame() {
+            state.game.isActive = true;
+            state.game.score = 0;
+            state.game.timeLeft = 10;
+            state.game.timerId = setInterval(() => {
+                state.game.timeLeft--;
+                if (state.game.timeLeft <= 0) {
+                    endGame();
+                }
+                render();
+            }, 1000);
+            render();
+        }
+
+        function handleGameClick() {
+            if (state.game.isActive) {
+                state.game.score++;
+                render();
+            }
+        }
+
+        async function endGame() {
+            clearInterval(state.game.timerId);
+            state.game.isActive = false;
+            
+            if (state.game.score > 0) {
+                const memberDoc = doc(db, `artifacts/${appId}/public/data/members/${state.currentUser.id}`);
+                try {
+                    await updateDoc(memberDoc, { poin: increment(state.game.score) });
+                    state.currentUser.poin += state.game.score;
+                    showNotification(`Game selesai! Kamu mendapatkan ${state.game.score} poin.`, "success");
+                } catch (error) {
+                    showNotification("Gagal menyimpan skormu.", "error");
+                }
+            } else {
+                showNotification("Game selesai! Coba lagi untuk dapat poin.", "success");
+            }
+            
+            render();
+        }
+
+
+        // --- INISIALISASI ---
+        function init() {
+            window.app = {
+                navigateTo: (view) => { state.currentView = view; render(); },
+                logout, toggleMemberStatus, deleteSchedule, addPoints,
+                deleteScript, selectScript, deleteImage, deleteAnnouncement
+            };
+
+            onAuthStateChanged(auth, async (user) => {
+                if (!user) {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                }
+                
+                // Subscribe ke semua koleksi data
+                onSnapshot(query(membersCol, orderBy("nama", "asc")), (snapshot) => {
+                    state.members = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    if(state.currentUser && state.currentUser.role === 'user'){
+                        const updatedSelf = state.members.find(m => m.id === state.currentUser.id);
+                        if(updatedSelf) state.currentUser = {...updatedSelf, role: 'user'};
+                    }
+                    if (state.isLoading) { state.isLoading = false; }
+                    render();
+                });
+
+                onSnapshot(query(scheduleCol, orderBy("tanggal", "desc")), (snapshot) => {
+                    state.schedule = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    render();
+                });
+                
+                onSnapshot(query(forumCol, orderBy("createdAt", "desc")), (snapshot) => {
+                    state.posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    render();
+                });
+                
+                onSnapshot(query(scriptsCol, orderBy("createdAt", "desc")), (snapshot) => {
+                    state.scripts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    render();
+                });
+
+                onSnapshot(query(galleryCol, orderBy("uploadedAt", "desc")), (snapshot) => {
+                    state.gallery = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    render();
+                });
+
+                 onSnapshot(query(announcementsCol, orderBy("createdAt", "desc")), (snapshot) => {
+                    state.announcements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    render();
+                });
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>           
