@@ -10,30 +10,43 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #1a1a2e;
-            color: #e0e0e0;
+            background-color: #f4f1ea; /* Latar belakang cerah */
+            color: #333; /* Teks gelap agar mudah dibaca */
         }
         .font-brand {
             font-family: 'Playfair Display', serif;
         }
+        /* Efek tirai panggung untuk halaman login */
+        #auth-view { 
+            background: linear-gradient(to right, #6d001a, #8b0000 25%, #8b0000 75%, #6d001a 100%);
+        }
         .main-bg {
-            background-color: #16213e;
+            background-color: #4a148c; /* Ungu gelap untuk Sidebar/Header */
+            color: #fff;
         }
         .card-bg {
-            background-color: #0f3460;
+            background-color: #ffffff; /* Kartu putih */
+            color: #333;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
         .accent-bg {
-            background-color: #e94560;
+            background-color: #ffab00; /* Emas/Amber untuk aksen */
+            color: #000;
+        }
+        .accent-bg:hover {
+            background-color: #ffd600;
         }
         .accent-text {
-            color: #e94560;
+            color: #ffab00; /* Teks Emas/Amber */
         }
         .sidebar-item {
+            color: #e0e0e0;
             transition: all 0.2s ease-in-out;
         }
         .sidebar-item:hover, .sidebar-item.active {
-            background-color: #e94560;
-            color: #ffffff;
+            background-color: #ffab00; /* Aksen emas saat aktif/hover */
+            color: #000;
             transform: translateX(5px);
         }
         .modal-backdrop {
@@ -44,14 +57,31 @@
             width: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #16213e;
+            background: #e0e0e0;
         }
         ::-webkit-scrollbar-thumb {
-            background: #e94560;
+            background: #4a148c; /* Scrollbar ungu */
             border-radius: 10px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #ff6b81;
+            background: #6a1b9a;
+        }
+        /* Efek Spotlight pada Judul Login */
+        .login-title-container {
+            position: relative;
+            overflow: hidden;
+            padding-bottom: 1rem;
+        }
+        .login-title-container::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%) rotate(25deg);
+            width: 150px;
+            height: 300px;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
+            pointer-events: none;
         }
     </style>
 </head>
@@ -63,51 +93,51 @@
         <!-- === BAGIAN LOGIN & DAFTAR === -->
         <div id="auth-view" class="w-full h-full flex items-center justify-center p-4">
             <div class="w-full max-w-md">
-                <div class="text-center mb-8">
-                    <i class="fas fa-theater-masks text-5xl accent-text"></i>
+                <div class="text-center mb-8 login-title-container">
+                    <i class="fas fa-theater-masks text-5xl text-yellow-300"></i>
                     <h1 class="font-brand text-4xl mt-2 text-white">RAJAWALIKU</h1>
-                    <p class="text-gray-400">Ekstrakurikuler Teater</p>
+                    <p class="text-gray-300">Ekstrakurikuler Teater</p>
                 </div>
 
                 <!-- FORM LOGIN -->
-                <div id="login-form" class="card-bg p-8 rounded-lg shadow-lg">
+                <div id="login-form" class="bg-black bg-opacity-25 p-8 rounded-lg shadow-lg">
                     <h2 class="text-2xl font-bold mb-6 text-center text-white">Login Anggota</h2>
                     <form id="loginForm">
                         <div class="mb-4">
                             <label for="login-username" class="block text-gray-300 mb-2">Username</label>
-                            <input type="text" id="login-username" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required>
+                            <input type="text" id="login-username" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white" required>
                         </div>
                         <div class="mb-6">
                             <label for="login-password" class="block text-gray-300 mb-2">Password</label>
-                            <input type="password" id="login-password" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required>
+                            <input type="password" id="login-password" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white" required>
                         </div>
-                        <button type="submit" class="w-full accent-bg text-white font-bold py-2 px-4 rounded-md hover:bg-pink-600 transition duration-300">Login</button>
+                        <button type="submit" class="w-full accent-bg text-black font-bold py-2 px-4 rounded-md hover:bg-yellow-400 transition duration-300">Login</button>
                     </form>
-                    <p class="text-center text-gray-400 mt-4 text-sm">
-                        Belum punya akun? <a href="#" id="show-register-link" class="accent-text hover:underline">Daftar di sini</a>
+                    <p class="text-center text-gray-300 mt-4 text-sm">
+                        Belum punya akun? <a href="#" id="show-register-link" class="text-yellow-400 hover:underline">Daftar di sini</a>
                     </p>
                 </div>
 
                 <!-- FORM DAFTAR ANGGOTA BARU -->
-                <div id="register-form" class="card-bg p-8 rounded-lg shadow-lg hidden">
+                <div id="register-form" class="bg-black bg-opacity-25 p-8 rounded-lg shadow-lg hidden">
                     <h2 class="text-2xl font-bold mb-6 text-center text-white">Daftar Anggota Baru</h2>
                     <form id="registerForm">
                         <div class="mb-4">
                             <label class="block text-gray-300 mb-2">Nama Lengkap</label>
-                            <input type="text" id="register-name" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required>
+                            <input type="text" id="register-name" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white" required>
                         </div>
                          <div class="mb-4">
                             <label class="block text-gray-300 mb-2">Username</label>
-                            <input type="text" id="register-username" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required>
+                            <input type="text" id="register-username" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white" required>
                         </div>
                         <div class="mb-4">
                             <label class="block text-gray-300 mb-2">Password</label>
-                            <input type="password" id="register-password" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required>
+                            <input type="password" id="register-password" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white" required>
                         </div>
-                        <button type="submit" class="w-full accent-bg text-white font-bold py-2 px-4 rounded-md hover:bg-pink-600 transition duration-300">Daftar</button>
+                        <button type="submit" class="w-full accent-bg text-black font-bold py-2 px-4 rounded-md hover:bg-yellow-400 transition duration-300">Daftar</button>
                     </form>
-                    <p class="text-center text-gray-400 mt-4 text-sm">
-                        Sudah punya akun? <a href="#" id="show-login-link" class="accent-text hover:underline">Login di sini</a>
+                    <p class="text-center text-gray-300 mt-4 text-sm">
+                        Sudah punya akun? <a href="#" id="show-login-link" class="text-yellow-400 hover:underline">Login di sini</a>
                     </p>
                 </div>
             </div>
@@ -117,7 +147,7 @@
         <div id="main-view" class="hidden w-full h-full">
             <!-- Sidebar (Desktop) -->
             <aside class="w-64 main-bg shadow-lg hidden md:block">
-                <div class="p-6 text-center border-b border-gray-700">
+                <div class="p-6 text-center border-b border-purple-800">
                      <i class="fas fa-theater-masks text-4xl accent-text"></i>
                     <h1 class="font-brand text-2xl mt-2 text-white">RAJAWALIKU</h1>
                 </div>
@@ -127,14 +157,14 @@
             <!-- Konten Utama -->
             <main class="flex-1 flex flex-col h-screen">
                 <!-- Header -->
-                <header class="main-bg shadow-md p-4 flex justify-between items-center">
+                <header class="main-bg shadow-md p-4 flex justify-between items-center text-white">
                     <button id="menu-toggle" class="md:hidden text-2xl">
                         <i class="fas fa-bars"></i>
                     </button>
                     <h2 id="page-title" class="text-xl font-bold"></h2>
                     <div class="flex items-center">
                         <span id="user-greeting" class="mr-4"></span>
-                        <button id="logout-btn" class="accent-bg text-white px-3 py-1 rounded-md text-sm font-semibold hover:bg-pink-600">
+                        <button id="logout-btn" class="accent-bg text-black px-3 py-1 rounded-md text-sm font-semibold hover:bg-yellow-400">
                             <i class="fas fa-sign-out-alt mr-1"></i> Logout
                         </button>
                     </div>
@@ -150,12 +180,12 @@
         <!-- Sidebar (Mobile) -->
         <div id="mobile-sidebar" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden">
             <aside class="w-64 main-bg shadow-lg h-full">
-                <div class="p-6 text-center border-b border-gray-700 flex justify-between items-center">
+                <div class="p-6 text-center border-b border-purple-800 flex justify-between items-center">
                     <div>
                         <i class="fas fa-theater-masks text-4xl accent-text"></i>
                         <h1 class="font-brand text-2xl mt-2 text-white">RAJAWALIKU</h1>
                     </div>
-                    <button id="close-menu" class="text-2xl"><i class="fas fa-times"></i></button>
+                    <button id="close-menu" class="text-2xl text-white"><i class="fas fa-times"></i></button>
                 </div>
                 <nav id="mobile-nav" class="p-4"></nav>
             </aside>
@@ -171,15 +201,15 @@
     <!-- Template untuk Konten Halaman -->
     <template id="dashboard-template">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div class="card-bg p-6 rounded-lg shadow-lg">
+            <div class="card-bg p-6 rounded-lg">
                 <h3 class="text-lg font-bold mb-2 accent-text">Kegiatan Terdekat</h3>
                 <div id="upcoming-activity">Memuat...</div>
             </div>
-            <div class="card-bg p-6 rounded-lg shadow-lg">
+            <div class="card-bg p-6 rounded-lg">
                 <h3 class="text-lg font-bold mb-2 accent-text">Pengumuman Terbaru</h3>
                 <div id="latest-announcement">Memuat...</div>
             </div>
-            <div class="card-bg p-6 rounded-lg shadow-lg">
+            <div class="card-bg p-6 rounded-lg">
                 <h3 class="text-lg font-bold mb-2 accent-text">Total Anggota</h3>
                 <p id="total-members" class="text-3xl font-bold">0</p>
             </div>
@@ -187,13 +217,13 @@
     </template>
 
     <template id="members-template">
-        <div class="card-bg p-6 rounded-lg shadow-lg">
+        <div class="card-bg p-6 rounded-lg">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold">Data Anggota</h2>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
-                    <thead class="border-b border-gray-700">
+                    <thead class="border-b border-gray-200">
                         <tr>
                             <th class="p-3">Nama</th>
                             <th class="p-3">Username</th>
@@ -210,10 +240,10 @@
     </template>
     
     <template id="activities-template">
-        <div class="card-bg p-6 rounded-lg shadow-lg">
+        <div class="card-bg p-6 rounded-lg">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold">Jadwal Kegiatan Bulan Ini</h2>
-                <button id="add-activity-btn" class="admin-only accent-bg text-white font-bold py-2 px-4 rounded-md hover:bg-pink-600 text-sm">
+                <button id="add-activity-btn" class="admin-only accent-bg text-black font-bold py-2 px-4 rounded-md hover:bg-yellow-400 text-sm">
                     <i class="fas fa-plus mr-2"></i>Tambah Kegiatan
                 </button>
             </div>
@@ -224,7 +254,7 @@
     </template>
     
     <template id="attendance-template">
-        <div class="card-bg p-6 rounded-lg shadow-lg">
+        <div class="card-bg p-6 rounded-lg">
             <h2 class="text-xl font-bold mb-4">Absensi Anggota</h2>
             <div id="attendance-list">
                 <!-- Daftar absensi akan dimuat di sini -->
@@ -233,10 +263,10 @@
     </template>
     
     <template id="announcements-template">
-        <div class="card-bg p-6 rounded-lg shadow-lg">
+        <div class="card-bg p-6 rounded-lg">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold">Pengumuman</h2>
-                <button id="add-announcement-btn" class="admin-only accent-bg text-white font-bold py-2 px-4 rounded-md hover:bg-pink-600 text-sm">
+                <button id="add-announcement-btn" class="admin-only accent-bg text-black font-bold py-2 px-4 rounded-md hover:bg-yellow-400 text-sm">
                     <i class="fas fa-plus mr-2"></i>Buat Pengumuman
                 </button>
             </div>
@@ -247,10 +277,10 @@
     </template>
 
     <template id="scripts-template">
-        <div class="card-bg p-6 rounded-lg shadow-lg">
+        <div class="card-bg p-6 rounded-lg">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold">Jendela Naskah</h2>
-                <button id="add-script-btn" class="admin-only accent-bg text-white font-bold py-2 px-4 rounded-md hover:bg-pink-600 text-sm">
+                <button id="add-script-btn" class="admin-only accent-bg text-black font-bold py-2 px-4 rounded-md hover:bg-yellow-400 text-sm">
                     <i class="fas fa-plus mr-2"></i>Tambah Naskah
                 </button>
             </div>
@@ -261,10 +291,10 @@
     </template>
 
     <template id="gallery-template">
-        <div class="card-bg p-6 rounded-lg shadow-lg">
+        <div class="card-bg p-6 rounded-lg">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold">Galeri Dokumentasi</h2>
-                <button id="add-gallery-btn" class="admin-only accent-bg text-white font-bold py-2 px-4 rounded-md hover:bg-pink-600 text-sm">
+                <button id="add-gallery-btn" class="admin-only accent-bg text-black font-bold py-2 px-4 rounded-md hover:bg-yellow-400 text-sm">
                     <i class="fas fa-plus mr-2"></i>Tambah Foto
                 </button>
             </div>
@@ -275,14 +305,14 @@
     </template>
 
     <template id="forum-template">
-        <div class="card-bg p-6 rounded-lg shadow-lg flex flex-col h-[calc(100vh-10rem)]">
-            <h2 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2">Forum Diskusi</h2>
+        <div class="card-bg p-6 rounded-lg flex flex-col h-[calc(100vh-10rem)]">
+            <h2 class="text-xl font-bold mb-4 border-b border-gray-200 pb-2">Forum Diskusi</h2>
             <div id="forum-messages" class="flex-1 overflow-y-auto space-y-4 pr-2 mb-4">
                 <!-- Pesan forum akan dimuat di sini -->
             </div>
             <form id="forum-form" class="flex gap-2">
-                <input type="text" id="forum-input" placeholder="Ketik pesan Anda..." class="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required>
-                <button type="submit" class="accent-bg text-white font-bold py-2 px-4 rounded-md hover:bg-pink-600"><i class="fas fa-paper-plane"></i></button>
+                <input type="text" id="forum-input" placeholder="Ketik pesan Anda..." class="flex-1 px-4 py-2 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
+                <button type="submit" class="accent-bg text-black font-bold py-2 px-4 rounded-md hover:bg-yellow-400"><i class="fas fa-paper-plane"></i></button>
             </form>
         </div>
     </template>
@@ -428,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (upcoming) {
             upcomingActivityEl.innerHTML = `
                 <p class="font-semibold">${upcoming.title}</p>
-                <p class="text-sm text-gray-400">${new Date(upcoming.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p class="text-sm text-gray-500">${new Date(upcoming.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             `;
         } else {
             upcomingActivityEl.textContent = 'Tidak ada kegiatan terdekat.';
@@ -439,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (latest) {
              latestAnnouncementEl.innerHTML = `
                 <p class="font-semibold">${latest.title}</p>
-                <p class="text-sm text-gray-400 truncate">${latest.content}</p>
+                <p class="text-sm text-gray-500 truncate">${latest.content}</p>
             `;
         } else {
             latestAnnouncementEl.textContent = 'Tidak ada pengumuman.';
@@ -452,10 +482,10 @@ document.addEventListener('DOMContentLoaded', () => {
     window.renderMembersPage = () => {
         const listEl = document.getElementById('members-list');
         listEl.innerHTML = state.users.map(user => `
-            <tr class="border-b border-gray-800">
+            <tr class="border-b border-gray-200">
                 <td class="p-3">${user.name}</td>
                 <td class="p-3">${user.username}</td>
-                <td class="p-3"><span class="px-2 py-1 rounded-full text-xs ${user.role === 'admin' ? 'bg-pink-500 text-white' : 'bg-blue-500 text-white'}">${user.role}</span></td>
+                <td class="p-3"><span class="px-2 py-1 rounded-full text-xs ${user.role === 'admin' ? 'bg-purple-600 text-white' : 'bg-blue-500 text-white'}">${user.role}</span></td>
                 <td class="p-3">
                     <button data-userid="${user.id}" class="delete-user-btn text-red-500 hover:text-red-400 ${user.role === 'admin' ? 'opacity-50 cursor-not-allowed' : ''}" ${user.role === 'admin' ? 'disabled' : ''}><i class="fas fa-trash"></i></button>
                 </td>
@@ -468,8 +498,8 @@ document.addEventListener('DOMContentLoaded', () => {
         listEl.innerHTML = state.activities.map(act => `
             <div class="card-bg p-4 rounded-lg">
                 <p class="font-bold">${act.title}</p>
-                <p class="text-sm text-gray-400"><i class="fas fa-calendar-alt mr-2"></i>${new Date(act.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                <p class="text-sm text-gray-400"><i class="fas fa-clock mr-2"></i>${act.time}</p>
+                <p class="text-sm text-gray-500"><i class="fas fa-calendar-alt mr-2"></i>${new Date(act.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                <p class="text-sm text-gray-500"><i class="fas fa-clock mr-2"></i>${act.time}</p>
                 <p class="text-sm mt-2">${act.description}</p>
                 <div class="admin-only mt-2 text-right">
                     <button data-id="${act.id}" class="delete-activity-btn text-red-500 hover:text-red-400"><i class="fas fa-trash"></i></button>
@@ -489,7 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="card-bg p-4 rounded-lg mb-4">
                         <h3 class="font-bold text-lg">${act.title} - ${new Date(act.date).toLocaleDateString('id-ID')}</h3>
                         <p class="text-sm mb-2">${attendees.length} dari ${state.users.filter(u=>u.role==='user').length} anggota hadir.</p>
-                        <ul class="list-disc list-inside">
+                        <ul class="list-disc list-inside text-gray-600">
                             ${attendees.map(a => `<li>${state.users.find(u => u.id === a.userId)?.name || 'Unknown'}</li>`).join('')}
                         </ul>
                     </div>
@@ -506,9 +536,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="card-bg p-4 rounded-lg mb-4 flex justify-between items-center">
                         <div>
                             <p class="font-bold">${act.title}</p>
-                            <p class="text-sm text-gray-400">${new Date(act.date).toLocaleDateString('id-ID')}</p>
+                            <p class="text-sm text-gray-500">${new Date(act.date).toLocaleDateString('id-ID')}</p>
                         </div>
-                        <button data-id="${act.id}" class="attend-btn ${hasAttended ? 'bg-green-500 cursor-not-allowed' : 'accent-bg hover:bg-pink-600'} text-white font-bold py-2 px-4 rounded-md text-sm" ${hasAttended ? 'disabled' : ''}>
+                        <button data-id="${act.id}" class="attend-btn ${hasAttended ? 'bg-green-500 text-white cursor-not-allowed' : 'accent-bg hover:bg-yellow-400 text-black'} font-bold py-2 px-4 rounded-md text-sm" ${hasAttended ? 'disabled' : ''}>
                             ${hasAttended ? '<i class="fas fa-check"></i> Hadir' : 'Absen Hadir'}
                         </button>
                     </div>
@@ -524,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="flex justify-between items-start">
                     <div>
                         <h3 class="font-bold text-lg">${ann.title}</h3>
-                        <p class="text-sm text-gray-400 mb-2">Diposting pada ${new Date(ann.timestamp).toLocaleString('id-ID')}</p>
+                        <p class="text-sm text-gray-500 mb-2">Diposting pada ${new Date(ann.timestamp).toLocaleString('id-ID')}</p>
                     </div>
                     <button data-id="${ann.id}" class="delete-announcement-btn admin-only text-red-500 hover:text-red-400 text-sm"><i class="fas fa-trash"></i></button>
                 </div>
@@ -537,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.renderScriptsPage = () => {
         const listEl = document.getElementById('scripts-list');
         listEl.innerHTML = state.scripts.map(script => `
-            <div data-id="${script.id}" class="open-script-btn card-bg p-4 rounded-lg text-center cursor-pointer hover:bg-gray-800 transition">
+            <div data-id="${script.id}" class="open-script-btn card-bg p-4 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition">
                 <i class="fas fa-file-alt text-4xl accent-text mb-2"></i>
                 <p class="font-bold truncate">${script.title}</p>
             </div>
@@ -566,8 +596,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return `
                 <div class="flex ${isCurrentUser ? 'justify-end' : 'justify-start'}">
                     <div class="max-w-xs md:max-w-md">
-                        <p class="text-xs ${isCurrentUser ? 'text-right' : 'text-left'} text-gray-400 mb-1">${user ? user.name : 'Unknown'} <span class="text-gray-500">${new Date(msg.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span></p>
-                        <div class="px-4 py-2 rounded-lg ${isCurrentUser ? 'accent-bg text-white' : 'main-bg'}">
+                        <p class="text-xs ${isCurrentUser ? 'text-right' : 'text-left'} text-gray-500 mb-1">${user ? user.name : 'Unknown'} <span class="text-gray-400">${new Date(msg.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span></p>
+                        <div class="px-4 py-2 rounded-lg ${isCurrentUser ? 'accent-bg text-black' : 'bg-gray-200'}">
                             ${msg.message}
                         </div>
                     </div>
@@ -581,17 +611,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===== FUNGSI MODAL =====
     const openModal = (title, content, onSave) => {
         modalContainer.innerHTML = `
-            <div class="card-bg rounded-lg shadow-lg w-full max-w-lg">
-                <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg text-gray-800">
+                <div class="p-4 border-b border-gray-200 flex justify-between items-center">
                     <h3 class="text-lg font-bold">${title}</h3>
-                    <button id="close-modal-btn" class="text-gray-400 hover:text-white">&times;</button>
+                    <button id="close-modal-btn" class="text-gray-400 hover:text-gray-800 text-2xl">&times;</button>
                 </div>
                 <div class="p-4">
                     ${content}
                 </div>
-                <div class="p-4 border-t border-gray-700 text-right">
+                <div class="p-4 border-t border-gray-200 text-right">
                     <button id="cancel-modal-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md mr-2">Batal</button>
-                    <button id="save-modal-btn" class="accent-bg hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-md">Simpan</button>
+                    <button id="save-modal-btn" class="accent-bg hover:bg-yellow-400 text-black font-bold py-2 px-4 rounded-md">Simpan</button>
                 </div>
             </div>
         `;
@@ -721,10 +751,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.id === 'add-activity-btn') {
             const content = `
                 <div class="space-y-4">
-                    <div><label class="block mb-1">Judul Kegiatan</label><input type="text" id="modal-activity-title" class="w-full px-3 py-2 bg-gray-700 rounded"></div>
-                    <div><label class="block mb-1">Tanggal</label><input type="date" id="modal-activity-date" class="w-full px-3 py-2 bg-gray-700 rounded"></div>
-                    <div><label class="block mb-1">Waktu</label><input type="time" id="modal-activity-time" class="w-full px-3 py-2 bg-gray-700 rounded"></div>
-                    <div><label class="block mb-1">Deskripsi</label><textarea id="modal-activity-desc" class="w-full px-3 py-2 bg-gray-700 rounded" rows="3"></textarea></div>
+                    <div><label class="block mb-1">Judul Kegiatan</label><input type="text" id="modal-activity-title" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div>
+                    <div><label class="block mb-1">Tanggal</label><input type="date" id="modal-activity-date" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div>
+                    <div><label class="block mb-1">Waktu</label><input type="time" id="modal-activity-time" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div>
+                    <div><label class="block mb-1">Deskripsi</label><textarea id="modal-activity-desc" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded" rows="3"></textarea></div>
                 </div>`;
             openModal('Tambah Kegiatan Baru', content, () => {
                 const newActivity = {
@@ -776,8 +806,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.id === 'add-announcement-btn') {
             const content = `
                 <div class="space-y-4">
-                    <div><label class="block mb-1">Judul</label><input type="text" id="modal-ann-title" class="w-full px-3 py-2 bg-gray-700 rounded"></div>
-                    <div><label class="block mb-1">Isi Pengumuman</label><textarea id="modal-ann-content" class="w-full px-3 py-2 bg-gray-700 rounded" rows="5"></textarea></div>
+                    <div><label class="block mb-1">Judul</label><input type="text" id="modal-ann-title" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div>
+                    <div><label class="block mb-1">Isi Pengumuman</label><textarea id="modal-ann-content" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded" rows="5"></textarea></div>
                 </div>`;
             openModal('Buat Pengumuman Baru', content, () => {
                 const newAnn = {
@@ -811,22 +841,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.id === 'add-script-btn') {
             const content = `
                 <div class="space-y-4">
-                    <div><label class="block mb-1">Judul Naskah</label><input type="text" id="modal-script-title" class="w-full px-3 py-2 bg-gray-700 rounded"></div>
-                    <div><label class="block mb-1">Isi Naskah</label><textarea id="modal-script-content" class="w-full px-3 py-2 bg-gray-700 rounded" rows="10"></textarea></div>
+                    <div><label class="block mb-1">Judul Naskah (Opsional)</label><input type="text" id="modal-script-title" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div>
+                    <div><label class="block mb-1">Pilih File Naskah (.txt, .md)</label><input type="file" id="modal-script-file" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100" accept=".txt,.md"></div>
                 </div>`;
             openModal('Tambah Naskah Baru', content, () => {
-                const newScript = {
-                    id: Date.now(),
-                    title: document.getElementById('modal-script-title').value,
-                    content: document.getElementById('modal-script-content').value,
-                };
-                if (newScript.title && newScript.content) {
-                    state.scripts.push(newScript);
-                    saveDatabase();
-                    renderScriptsPage();
-                    closeModal();
+                const titleInput = document.getElementById('modal-script-title').value;
+                const fileInput = document.getElementById('modal-script-file');
+                const file = fileInput.files[0];
+
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const newScript = {
+                            id: Date.now(),
+                            title: titleInput.trim() || file.name,
+                            content: event.target.result,
+                        };
+                        state.scripts.push(newScript);
+                        saveDatabase();
+                        renderScriptsPage();
+                        closeModal();
+                    };
+                    reader.readAsText(file);
                 } else {
-                    alert('Judul dan isi naskah tidak boleh kosong.');
+                    alert('Harap pilih file naskah.');
                 }
             });
         }
@@ -836,13 +874,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const scriptId = parseInt(e.target.closest('.open-script-btn').dataset.id);
             const script = state.scripts.find(s => s.id === scriptId);
             if(script) {
-                const content = `<pre class="whitespace-pre-wrap text-sm bg-gray-900 p-4 rounded-md h-96 overflow-y-auto">${script.content}</pre>
+                const content = `<pre class="whitespace-pre-wrap text-sm bg-gray-100 p-4 rounded-md h-96 overflow-y-auto border">${script.content}</pre>
                 <div class="admin-only mt-4 text-right">
                     <button id="delete-script-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">Hapus Naskah Ini</button>
                 </div>
                 `;
                 openModal(`Naskah: ${script.title}`, content, closeModal);
-                // Ganti tombol Simpan menjadi Tutup
                 document.getElementById('save-modal-btn').textContent = 'Tutup';
                 document.getElementById('save-modal-btn').onclick = closeModal;
                 document.getElementById('cancel-modal-btn').style.display = 'none';
@@ -867,22 +904,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.id === 'add-gallery-btn') {
             const content = `
                 <div class="space-y-4">
-                    <div><label class="block mb-1">URL Gambar</label><input type="url" id="modal-gallery-url" class="w-full px-3 py-2 bg-gray-700 rounded" placeholder="https://example.com/image.jpg"></div>
-                    <div><label class="block mb-1">Keterangan</label><input type="text" id="modal-gallery-caption" class="w-full px-3 py-2 bg-gray-700 rounded"></div>
+                     <div><label class="block mb-1">Pilih File Gambar</label><input type="file" id="modal-gallery-file" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100" accept="image/*"></div>
+                    <div><label class="block mb-1">Keterangan</label><input type="text" id="modal-gallery-caption" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div>
                 </div>`;
             openModal('Tambah Foto ke Galeri', content, () => {
-                const newImg = {
-                    id: Date.now(),
-                    imageUrl: document.getElementById('modal-gallery-url').value,
-                    caption: document.getElementById('modal-gallery-caption').value,
-                };
-                if (newImg.imageUrl) {
-                    state.gallery.push(newImg);
-                    saveDatabase();
-                    renderGalleryPage();
-                    closeModal();
+                const fileInput = document.getElementById('modal-gallery-file');
+                const caption = document.getElementById('modal-gallery-caption').value;
+                const file = fileInput.files[0];
+
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const newImg = {
+                            id: Date.now(),
+                            imageUrl: event.target.result, // base64 data URL
+                            caption: caption,
+                        };
+                        state.gallery.push(newImg);
+                        saveDatabase();
+                        renderGalleryPage();
+                        closeModal();
+                    };
+                    reader.readAsDataURL(file);
                 } else {
-                    alert('URL Gambar tidak boleh kosong.');
+                    alert('Harap pilih file gambar.');
                 }
             });
         }
