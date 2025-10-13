@@ -282,7 +282,7 @@
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold">Jendela Naskah</h2>
                 <button id="add-script-btn" class="admin-only accent-bg text-white font-bold py-2 px-4 rounded-md hover:bg-yellow-400 text-sm">
-                    <i class="fas fa-plus mr-2"></i>Tambah Naskah
+                    <i class="fas fa-plus mr-2"></i>Unggah Naskah
                 </button>
             </div>
             <div id="scripts-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -295,7 +295,7 @@
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold">Galeri Dokumentasi</h2>
                 <button id="add-gallery-btn" class="admin-only accent-bg text-white font-bold py-2 px-4 rounded-md hover:bg-yellow-400 text-sm">
-                    <i class="fas fa-plus mr-2"></i>Tambah Foto
+                    <i class="fas fa-plus mr-2"></i>Unggah Foto
                 </button>
             </div>
             <div id="gallery-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -315,7 +315,6 @@
         </div>
     </template>
     
-    <!-- TEMPLATE BARU: BACKSTAGE -->
     <template id="backstage-template">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Kolom Kostum -->
@@ -334,18 +333,17 @@
                 </div>
                 <ul id="props-list" class="space-y-2"></ul>
             </div>
-            <!-- Kolom Jadwal Gladi -->
+            <!-- Kolom Jadwal Latihan -->
             <div class="card-bg p-6 rounded-lg">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold"><i class="fas fa-calendar-check mr-2 accent-text"></i>Jadwal Gladi</h3>
-                    <button id="add-rehearsal-btn" class="admin-only accent-bg text-white font-bold py-1 px-3 rounded-md text-sm"><i class="fas fa-plus"></i></button>
+                    <h3 class="text-xl font-bold"><i class="fas fa-calendar-check mr-2 accent-text"></i>Jadwal Latihan</h3>
+                    <button id="add-practice-btn" class="admin-only accent-bg text-white font-bold py-1 px-3 rounded-md text-sm"><i class="fas fa-plus"></i></button>
                 </div>
-                <ul id="rehearsals-list" class="space-y-2"></ul>
+                <ul id="practices-list" class="space-y-2"></ul>
             </div>
         </div>
     </template>
 
-    <!-- TEMPLATE BARU: KUIS -->
     <template id="quiz-template">
         <div class="card-bg p-6 rounded-lg">
             <div class="flex justify-between items-center mb-4">
@@ -374,18 +372,18 @@ document.addEventListener('DOMContentLoaded', () => {
         scripts: [],
         gallery: [],
         forumMessages: [],
-        costumes: [], // BARU
-        props: [], // BARU
-        rehearsals: [], // BARU
-        quizzes: [], // BARU
-        quizSubmissions: [] // BARU
+        costumes: [],
+        props: [],
+        practices: [], // Diubah dari rehearsals
+        quizzes: [],
+        quizSubmissions: []
     };
 
     const loadDatabase = () => {
         state = JSON.parse(localStorage.getItem('rajawalikuDB')) || {
             currentUser: null, currentPage: 'login', users: [], activities: [],
             attendance: [], announcements: [], scripts: [], gallery: [], forumMessages: [],
-            costumes: [], props: [], rehearsals: [], quizzes: [], quizSubmissions: []
+            costumes: [], props: [], practices: [], quizzes: [], quizSubmissions: []
         };
         // Inisialisasi admin jika belum ada
         if (state.users.length === 0) {
@@ -425,21 +423,21 @@ document.addEventListener('DOMContentLoaded', () => {
         scripts: document.getElementById('scripts-template'),
         gallery: document.getElementById('gallery-template'),
         forum: document.getElementById('forum-template'),
-        backstage: document.getElementById('backstage-template'), // BARU
-        quiz: document.getElementById('quiz-template'), // BARU
+        backstage: document.getElementById('backstage-template'),
+        quiz: document.getElementById('quiz-template'),
     };
 
     // ===== NAVIGASI & ROUTING =====
     const navItems = [
         { id: 'dashboard', icon: 'fa-tachometer-alt', text: 'Dashboard', roles: ['admin', 'user'] },
         { id: 'members', icon: 'fa-users', text: 'Data Anggota', roles: ['admin'] },
-        { id: 'backstage', icon: 'fa-cogs', text: 'Backstage', roles: ['admin', 'user'] }, // Diperbarui untuk user
+        { id: 'backstage', icon: 'fa-cogs', text: 'Backstage', roles: ['admin', 'user'] },
         { id: 'activities', icon: 'fa-calendar-alt', text: 'Kegiatan', roles: ['admin', 'user'] },
         { id: 'attendance', icon: 'fa-user-check', text: 'Absen Anggota', roles: ['admin', 'user'] },
         { id: 'announcements', icon: 'fa-bullhorn', text: 'Pengumuman', roles: ['admin', 'user'] },
         { id: 'scripts', icon: 'fa-file-alt', text: 'Jendela Naskah', roles: ['admin', 'user'] },
         { id: 'gallery', icon: 'fa-images', text: 'Galeri', roles: ['admin', 'user'] },
-        { id: 'quiz', icon: 'fa-brain', text: 'Kuis Teater', roles: ['admin', 'user'] }, // BARU
+        { id: 'quiz', icon: 'fa-brain', text: 'Kuis Teater', roles: ['admin', 'user'] },
         { id: 'forum', icon: 'fa-comments', text: 'Forum Diskusi', roles: ['admin', 'user'] },
     ];
     
@@ -469,23 +467,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (templates[pageId] && templates[pageId].content) {
             contentArea.appendChild(templates[pageId].content.cloneNode(true));
-            // Panggil fungsi render spesifik untuk halaman tersebut
             const renderFunction = window[`render${pageId.charAt(0).toUpperCase() + pageId.slice(1)}Page`];
             if (typeof renderFunction === 'function') {
                 renderFunction();
             }
         }
         
-        // Update active class di sidebar
         document.querySelectorAll('.sidebar-item').forEach(el => {
             el.classList.toggle('active', el.dataset.page === pageId);
         });
-
-        // Sembunyikan sidebar mobile setelah navigasi
         mobileSidebar.classList.add('hidden');
     };
 
-    // ===== FUNGSI RENDER HALAMAN (YANG ADA & BARU) =====
+    // ===== FUNGSI RENDER HALAMAN =====
     window.renderDashboardPage = () => {
         const upcomingActivityEl = document.getElementById('upcoming-activity');
         const latestAnnouncementEl = document.getElementById('latest-announcement');
@@ -580,7 +574,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <div data-id="${script.id}" class="open-script-btn card-bg p-4 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition">
                 <i class="fas fa-file-alt text-4xl accent-text mb-2"></i>
                 <p class="font-bold truncate">${script.title}</p>
-            </div>`).join('') || '<p>Belum ada naskah yang ditambahkan.</p>';
+                <p class="text-xs text-gray-500 truncate">${script.fileName}</p>
+            </div>`).join('') || '<p>Belum ada naskah yang diunggah.</p>';
     };
     
     window.renderGalleryPage = () => {
@@ -626,8 +621,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         renderList('costumes', document.getElementById('costumes-list'));
         renderList('props', document.getElementById('props-list'));
-        renderList('rehearsals', document.getElementById('rehearsals-list'));
-        toggleAdminElements(); // Terapkan visibilitas elemen admin
+        renderList('practices', document.getElementById('practices-list')); // Diubah dari rehearsals
+        toggleAdminElements();
     };
     
     window.renderQuizPage = () => {
@@ -660,7 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3 class="text-lg font-bold">${title}</h3>
                     <button id="close-modal-btn" class="text-gray-400 hover:text-gray-800 text-2xl">&times;</button>
                 </div>
-                <div class="p-4">${content}</div>
+                <div class="p-4 overflow-y-auto max-h-[70vh]">${content}</div>
                 <div class="p-4 border-t text-right">
                     <button id="cancel-modal-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md mr-2">Batal</button>
                     <button id="save-modal-btn" class="accent-bg hover:bg-yellow-400 text-white font-bold py-2 px-4 rounded-md">Simpan</button>
@@ -669,7 +664,14 @@ document.addEventListener('DOMContentLoaded', () => {
         modalContainer.classList.remove('hidden');
         document.getElementById('close-modal-btn').onclick = closeModal;
         document.getElementById('cancel-modal-btn').onclick = closeModal;
-        document.getElementById('save-modal-btn').onclick = onSave;
+        
+        const saveBtn = document.getElementById('save-modal-btn');
+        if (onSave) {
+            saveBtn.onclick = onSave;
+        } else {
+            saveBtn.style.display = 'none';
+            document.getElementById('cancel-modal-btn').textContent = 'Tutup';
+        }
     };
     const closeModal = () => {
         modalContainer.classList.add('hidden');
@@ -717,7 +719,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // ===== EVENT LISTENERS (YANG ADA & BARU) =====
+    // ===== HELPER FUNCTION =====
+    const dataURLtoBlob = (dataurl) => {
+        const arr = dataurl.split(','), mimeMatch = arr[0].match(/:(.*?);/);
+        if (!mimeMatch) return null;
+        const mime = mimeMatch[1],
+            bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while(n--){
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new Blob([u8arr], {type:mime});
+    }
+
+    // ===== EVENT LISTENERS =====
     showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); loginForm.classList.add('hidden'); registerForm.classList.remove('hidden'); });
     showLoginLink.addEventListener('click', (e) => { e.preventDefault(); loginForm.classList.remove('hidden'); registerForm.classList.add('hidden'); });
     document.getElementById('loginForm').addEventListener('submit', (e) => {
@@ -769,31 +785,96 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (e.target.id === 'add-announcement-btn') {
-            // ... logic
+            const content = `<div class="space-y-4"><div><label class="block mb-1">Judul Pengumuman</label><input type="text" id="modal-announcement-title" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div><div><label class="block mb-1">Isi Pengumuman</label><textarea id="modal-announcement-content" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded" rows="5"></textarea></div></div>`;
+            openModal('Buat Pengumuman Baru', content, () => {
+                const newAnnouncement = { id: Date.now(), title: document.getElementById('modal-announcement-title').value, content: document.getElementById('modal-announcement-content').value, timestamp: new Date() };
+                if (newAnnouncement.title && newAnnouncement.content) { state.announcements.push(newAnnouncement); saveDatabase(); renderAnnouncementsPage(); closeModal(); } else { alert('Judul dan isi tidak boleh kosong.'); }
+            });
         }
         
         if (e.target.closest('.delete-announcement-btn')) {
-            // ... logic
+            const annId = parseInt(e.target.closest('.delete-announcement-btn').dataset.id);
+            if(confirm('Yakin hapus pengumuman ini?')) { state.announcements = state.announcements.filter(a => a.id !== annId); saveDatabase(); renderAnnouncementsPage(); }
         }
         
         if (e.target.id === 'add-script-btn') {
-            // ... logic
+            const content = `<div class="space-y-4"><div><label class="block mb-1">Judul Naskah</label><input type="text" id="modal-script-title" class="w-full px-3 py-2 bg-gray-100 border rounded"></div><div><label class="block mb-1">Pilih File Naskah</label><input type="file" id="modal-script-file" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100"></div></div>`;
+            openModal('Unggah Naskah Baru', content, () => {
+                const title = document.getElementById('modal-script-title').value;
+                const fileInput = document.getElementById('modal-script-file');
+                const file = fileInput.files[0];
+                if (title && file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const newScript = { id: Date.now(), title: title, fileName: file.name, fileData: event.target.result };
+                        state.scripts.push(newScript);
+                        saveDatabase(); renderScriptsPage(); closeModal();
+                    };
+                    reader.readAsDataURL(file);
+                } else { alert('Judul dan file naskah tidak boleh kosong.'); }
+            });
         }
         
         if (e.target.closest('.open-script-btn')) {
-            // ... logic
+            const scriptId = parseInt(e.target.closest('.open-script-btn').dataset.id);
+            const script = state.scripts.find(s => s.id === scriptId);
+            if (script) {
+                const modalContent = `<p class="mb-4">File: <strong>${script.fileName}</strong></p><button id="download-script-btn" class="accent-bg text-white font-bold py-2 px-4 rounded-md"><i class="fas fa-download mr-2"></i>Unduh Naskah</button><div class="admin-only mt-4 text-right"><button id="delete-script-from-modal" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md text-sm">Hapus Naskah</button></div>`;
+                openModal(`Naskah: ${script.title}`, modalContent, null);
+                document.getElementById('download-script-btn').onclick = () => {
+                    const blob = dataURLtoBlob(script.fileData);
+                    if (blob) {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = script.fileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        a.remove();
+                    } else { alert('Gagal memproses file untuk diunduh.'); }
+                };
+                const deleteBtn = document.getElementById('delete-script-from-modal');
+                if (deleteBtn) {
+                    deleteBtn.onclick = () => {
+                        if (confirm('Anda yakin ingin menghapus naskah ini?')) { state.scripts = state.scripts.filter(s => s.id !== scriptId); saveDatabase(); renderScriptsPage(); closeModal(); }
+                    };
+                }
+                toggleAdminElements();
+            }
         }
         
         if (e.target.id === 'add-gallery-btn') {
-            // ... logic
+            const content = `<div class="space-y-4"><div><label class="block mb-1">Pilih File Gambar</label><input type="file" id="modal-gallery-file" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100" accept="image/*"></div><div><label class="block mb-1">Keterangan</label><input type="text" id="modal-gallery-caption" class="w-full px-3 py-2 bg-gray-100 border rounded"></div><div class="mt-2"><img id="modal-image-preview" src="" alt="Pratinjau" class="max-h-40 rounded hidden mx-auto"></div></div>`;
+            openModal('Unggah Foto Baru', content, () => {
+                const caption = document.getElementById('modal-gallery-caption').value;
+                const fileInput = document.getElementById('modal-gallery-file');
+                const preview = document.getElementById('modal-image-preview');
+                if (fileInput.files[0] && caption) {
+                    const newImage = { id: Date.now(), imageUrl: preview.src, caption: caption };
+                    state.gallery.push(newImage); saveDatabase(); renderGalleryPage(); closeModal();
+                } else { alert('File Gambar dan Keterangan tidak boleh kosong.'); }
+            });
+            const fileInput = document.getElementById('modal-gallery-file');
+            const preview = document.getElementById('modal-image-preview');
+            fileInput.onchange = () => {
+                const file = fileInput.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => { preview.src = e.target.result; preview.classList.remove('hidden'); }
+                    reader.readAsDataURL(file);
+                }
+            };
         }
         
         if (e.target.closest('.delete-gallery-btn')) {
-            // ... logic
+            const imgId = parseInt(e.target.closest('.delete-gallery-btn').dataset.id);
+            if (confirm('Anda yakin ingin menghapus foto ini?')) { state.gallery = state.gallery.filter(img => img.id !== imgId); saveDatabase(); renderGalleryPage(); }
         }
 
         const addBackstageItem = (type, title) => {
-             const content = `<div class="space-y-4"><div><label class="block mb-1">Nama Item</label><input type="text" id="modal-item-name" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div><div><label class="block mb-1">Status/Keterangan</label><input type="text" id="modal-item-status" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div></div>`;
+             const content = `<div class="space-y-4"><div><label class="block mb-1">Nama Item</label><input type="text" id="modal-item-name" class="w-full px-3 py-2 bg-gray-100 border rounded"></div><div><label class="block mb-1">Status/Keterangan</label><input type="text" id="modal-item-status" class="w-full px-3 py-2 bg-gray-100 border rounded"></div></div>`;
             openModal(`Tambah ${title}`, content, () => {
                 const newItem = { id: Date.now(), name: document.getElementById('modal-item-name').value, status: document.getElementById('modal-item-status').value };
                 if (newItem.name) { state[type].push(newItem); saveDatabase(); renderBackstagePage(); closeModal(); } else { alert('Nama item tidak boleh kosong.'); }
@@ -802,7 +883,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (e.target.id === 'add-costume-btn') addBackstageItem('costumes', 'Kostum');
         if (e.target.id === 'add-prop-btn') addBackstageItem('props', 'Properti');
-        if (e.target.id === 'add-rehearsal-btn') addBackstageItem('rehearsals', 'Jadwal Gladi');
+        if (e.target.id === 'add-practice-btn') addBackstageItem('practices', 'Jadwal Latihan');
 
         if (e.target.closest('.delete-backstage-item-btn')) {
             const btn = e.target.closest('.delete-backstage-item-btn');
@@ -816,7 +897,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.id === 'add-quiz-btn') {
             let questionCount = 1;
             const getQuestionHTML = (index) => `<div class="question-block border-t pt-4 mt-4"><p class="font-semibold mb-2">Pertanyaan ${index}</p><input type="text" placeholder="Tulis pertanyaan..." class="modal-quiz-q w-full border p-2 rounded mb-2"><div class="grid grid-cols-2 gap-2">${[1,2,3,4].map(i => `<div class="flex items-center"><input type="radio" name="answer_${index}" value="${i-1}" class="modal-quiz-a-radio mr-2"><input type="text" placeholder="Opsi ${i}" class="modal-quiz-a w-full border p-2 rounded text-sm"></div>`).join('')}</div></div>`;
-            let content = `<div><label class="block mb-1">Judul Kuis</label><input type="text" id="modal-quiz-title" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div><div id="questions-container">${getQuestionHTML(1)}</div><button id="add-question-btn" type="button" class="mt-4 text-sm accent-bg text-white py-1 px-3 rounded">+ Tambah Pertanyaan</button>`;
+            let content = `<div><label class="block mb-1">Judul Kuis</label><input type="text" id="modal-quiz-title" class="w-full px-3 py-2 bg-gray-100 border rounded"></div><div id="questions-container">${getQuestionHTML(1)}</div><button id="add-question-btn" type="button" class="mt-4 text-sm accent-bg text-white py-1 px-3 rounded">+ Tambah Pertanyaan</button>`;
             openModal('Buat Kuis Baru', content, () => {
                 const newQuiz = { id: Date.now(), title: document.getElementById('modal-quiz-title').value, questions: [] };
                 document.querySelectorAll('.question-block').forEach((qBlock, index) => {
