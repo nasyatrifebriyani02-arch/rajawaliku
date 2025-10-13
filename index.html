@@ -316,7 +316,7 @@
     </template>
     
     <template id="backstage-template">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Kolom Kostum -->
             <div class="card-bg p-6 rounded-lg">
                 <div class="flex justify-between items-center mb-4">
@@ -334,13 +334,6 @@
                 <ul id="props-list" class="space-y-2"></ul>
             </div>
             <!-- Kolom Jadwal Latihan -->
-            <div class="card-bg p-6 rounded-lg">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold"><i class="fas fa-calendar-check mr-2 accent-text"></i>Jadwal Latihan</h3>
-                    <button id="add-practice-btn" class="admin-only accent-bg text-white font-bold py-1 px-3 rounded-md text-sm"><i class="fas fa-plus"></i></button>
-                </div>
-                <ul id="practices-list" class="space-y-2"></ul>
-            </div>
         </div>
     </template>
 
@@ -374,7 +367,6 @@ document.addEventListener('DOMContentLoaded', () => {
         forumMessages: [],
         costumes: [],
         props: [],
-        practices: [], // Diubah dari rehearsals
         quizzes: [],
         quizSubmissions: []
     };
@@ -383,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state = JSON.parse(localStorage.getItem('rajawalikuDB')) || {
             currentUser: null, currentPage: 'login', users: [], activities: [],
             attendance: [], announcements: [], scripts: [], gallery: [], forumMessages: [],
-            costumes: [], props: [], practices: [], quizzes: [], quizSubmissions: []
+            costumes: [], props: [], quizzes: [], quizSubmissions: []
         };
         // Inisialisasi admin jika belum ada
         if (state.users.length === 0) {
@@ -621,7 +613,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         renderList('costumes', document.getElementById('costumes-list'));
         renderList('props', document.getElementById('props-list'));
-        renderList('practices', document.getElementById('practices-list')); // Diubah dari rehearsals
         toggleAdminElements();
     };
     
@@ -883,7 +874,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (e.target.id === 'add-costume-btn') addBackstageItem('costumes', 'Kostum');
         if (e.target.id === 'add-prop-btn') addBackstageItem('props', 'Properti');
-        if (e.target.id === 'add-practice-btn') addBackstageItem('practices', 'Jadwal Latihan');
 
         if (e.target.closest('.delete-backstage-item-btn')) {
             const btn = e.target.closest('.delete-backstage-item-btn');
