@@ -89,7 +89,15 @@
             background: linear-gradient(to bottom, rgba(255, 215, 0, 0.4), rgba(255, 215, 0, 0)); /* Spotlight Emas */
             pointer-events: none;
         }
+        /* Menggunakan ikon topeng teater sebagai pengganti rajawali untuk tema */
+        .brand-icon::before {
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            content: "\f630"; /* Kode unicode untuk fa-theater-masks */
+        }
     </style>
+    <!-- Tambahkan Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="overflow-x-hidden">
 
@@ -100,9 +108,15 @@
         <div id="auth-view" class="w-full h-full flex items-center justify-center p-4">
             <div class="w-full max-w-md">
                 <div class="text-center mb-8 login-title-container">
-                    <i class="fas fa-theater-masks text-5xl text-yellow-300"></i>
+                    <i class="brand-icon text-5xl text-yellow-300"></i>
                     <h1 class="font-brand text-4xl mt-2 text-white">RAJAWALIKU</h1>
                     <p class="text-gray-300">Ekstrakurikuler Teater</p>
+                </div>
+
+                <!-- Pesan Error Konfigurasi -->
+                <div id="config-error" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg" role="alert">
+                    <p class="font-bold">Konfigurasi Diperlukan!</p>
+                    <p class="text-sm">Anda harus memasukkan Supabase URL dan Key Anda di dalam file <strong>index.html</strong> agar aplikasi ini berfungsi. Silakan edit file dan isi variabel <code>SUPABASE_URL</code> dan <code>SUPABASE_KEY</code> di dalam tag <code>&lt;script&gt;</code>.</p>
                 </div>
 
                 <!-- FORM LOGIN -->
@@ -154,7 +168,7 @@
             <!-- Sidebar (Desktop) -->
             <aside class="w-64 main-bg shadow-lg hidden md:block">
                 <div class="p-6 text-center border-b border-yellow-900">
-                     <i class="fas fa-theater-masks text-4xl accent-text"></i>
+                     <i class="brand-icon text-4xl accent-text"></i>
                     <h1 class="font-brand text-2xl mt-2 text-white">RAJAWALIKU</h1>
                 </div>
                 <nav id="desktop-nav" class="p-4"></nav>
@@ -188,7 +202,7 @@
             <aside class="w-64 main-bg shadow-lg h-full">
                 <div class="p-6 text-center border-b border-yellow-900 flex justify-between items-center">
                     <div>
-                        <i class="fas fa-theater-masks text-4xl accent-text"></i>
+                        <i class="brand-icon text-4xl accent-text"></i>
                         <h1 class="font-brand text-2xl mt-2 text-white">RAJAWALIKU</h1>
                     </div>
                     <button id="close-menu" class="text-2xl text-white"><i class="fas fa-times"></i></button>
@@ -315,84 +329,28 @@
         </div>
     </template>
     
-    <template id="backstage-template">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Kolom Kostum -->
-            <div class="card-bg p-6 rounded-lg">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold"><i class="fas fa-vest-patches mr-2 accent-text"></i>Kostum</h3>
-                    <button id="add-costume-btn" class="admin-only accent-bg text-white font-bold py-1 px-3 rounded-md text-sm"><i class="fas fa-plus"></i></button>
-                </div>
-                <ul id="costumes-list" class="space-y-2"></ul>
-            </div>
-            <!-- Kolom Properti -->
-            <div class="card-bg p-6 rounded-lg">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold"><i class="fas fa-hat-wizard mr-2 accent-text"></i>Properti</h3>
-                    <button id="add-prop-btn" class="admin-only accent-bg text-white font-bold py-1 px-3 rounded-md text-sm"><i class="fas fa-plus"></i></button>
-                </div>
-                <ul id="props-list" class="space-y-2"></ul>
-            </div>
-            <!-- Kolom Jadwal Latihan -->
-        </div>
-    </template>
-
-    <template id="quiz-template">
-        <div class="card-bg p-6 rounded-lg">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Kuis Teater Interaktif</h2>
-                <button id="add-quiz-btn" class="admin-only accent-bg text-white font-bold py-2 px-4 rounded-md hover:bg-yellow-400 text-sm">
-                    <i class="fas fa-plus mr-2"></i>Buat Kuis Baru
-                </button>
-            </div>
-            <div id="quiz-list" class="space-y-4">
-                <!-- Daftar kuis akan dimuat di sini -->
-            </div>
-        </div>
-    </template>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-
-    // ===== STATE MANAGEMENT & DATABASE (SIMULASI) =====
-    let state = {
-        currentUser: null,
-        currentPage: 'login',
-        users: [],
-        activities: [],
-        attendance: [],
-        announcements: [],
-        scripts: [],
-        gallery: [],
-        forumMessages: [],
-        costumes: [],
-        props: [],
-        quizzes: [],
-        quizSubmissions: []
-    };
-
-    const loadDatabase = () => {
-        state = JSON.parse(localStorage.getItem('rajawalikuDB')) || {
-            currentUser: null, currentPage: 'login', users: [], activities: [],
-            attendance: [], announcements: [], scripts: [], gallery: [], forumMessages: [],
-            costumes: [], props: [], quizzes: [], quizSubmissions: []
-        };
-        // Inisialisasi admin jika belum ada
-        if (state.users.length === 0) {
-            state.users.push({ id: 1, name: 'Admin Utama', username: 'admin', password: 'admin', role: 'admin' });
-            state.users.push({ id: 2, name: 'Anggota Biasa', username: 'user', password: 'user', role: 'user' });
-            saveDatabase();
-        }
-    };
-    const saveDatabase = () => {
-        localStorage.setItem('rajawalikuDB', JSON.stringify(state));
-    };
-
+    // =================================================================================
+    // ===== KONEKSI SUPABASE - PENTING! =====
+    // =================================================================================
+    // Aplikasi TIDAK AKAN BERFUNGSI jika Anda tidak mengganti nilai placeholder di bawah ini.
+    // 1. Buka dashboard Supabase project Anda di https://supabase.com/.
+    // 2. Pergi ke "Project Settings" (ikon gerigi di menu kiri).
+    // 3. Klik "API" pada bagian Project Settings.
+    // 4. Di bagian "Project API keys", salin "URL" Anda dan tempel di bawah.
+    // 5. Salin "anon" "public" key Anda dan tempel di bawah.
+    // =================================================================================
+    const SUPABASE_URL = 'https://aqsmlmnuowmmvkfhglno.supabase.co'; 
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxc21sbW51b3dtbXZrZmhnbG5vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzMDA0NjAsImV4cCI6MjA3NTg3NjQ2MH0.BbgFUy7cUxUfbapWf39Ex85f4Lq1XukObzKgVFSbSJQ'; 
+    let supabaseClient;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxc21sbW51b3dtbXZrZmhnbG5vIiwicm9sZSI6I
+    
     // ===== UI ELEMENTS =====
     const authView = document.getElementById('auth-view');
     const mainView = document.getElementById('main-view');
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
+    const loginFormEl = document.getElementById('login-form');
+    const registerFormEl = document.getElementById('register-form');
     const showRegisterLink = document.getElementById('show-register-link');
     const showLoginLink = document.getElementById('show-login-link');
     const contentArea = document.getElementById('content-area');
@@ -404,6 +362,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeMenu = document.getElementById('close-menu');
     const mobileSidebar = document.getElementById('mobile-sidebar');
     const modalContainer = document.getElementById('modal-container');
+    const configErrorDiv = document.getElementById('config-error');
+
+    // ===== VALIDASI KONEKSI SUPABASE =====
+    if (SUPABASE_URL.includes('https://aqsmlmnuowmmvkfhglno.supabase.co') || SUPABASE_KEY.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxc21sbW51b3dtbXZrZmhnbG5vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzMDA0NjAsImV4cCI6MjA3NTg3NjQ2MH0.BbgFUy7cUxUfbapWf39Ex85f4Lq1XukObzKgVFSbSJQ')) {
+        console.error("Kesalahan Konfigurasi: Harap masukkan Supabase URL dan Key Anda yang valid di dalam file index.html.");
+        
+        configErrorDiv.classList.remove('hidden');
+
+        document.querySelector('#loginForm button').disabled = true;
+        document.querySelector('#registerForm button').disabled = true;
+        document.querySelector('#loginForm button').classList.add('opacity-50', 'cursor-not-allowed');
+        document.querySelector('#registerForm button').classList.add('opacity-50', 'cursor-not-allowed');
+
+        // Hentikan eksekusi script
+        return; 
+    } else {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+
+    // ===== STATE MANAGEMENT APLIKASI =====
+    let appState = {
+        currentUser: null,
+        currentPage: 'login',
+    };
 
     // ===== TEMPLATES =====
     const templates = {
@@ -415,27 +397,23 @@ document.addEventListener('DOMContentLoaded', () => {
         scripts: document.getElementById('scripts-template'),
         gallery: document.getElementById('gallery-template'),
         forum: document.getElementById('forum-template'),
-        backstage: document.getElementById('backstage-template'),
-        quiz: document.getElementById('quiz-template'),
     };
 
     // ===== NAVIGASI & ROUTING =====
     const navItems = [
         { id: 'dashboard', icon: 'fa-tachometer-alt', text: 'Dashboard', roles: ['admin', 'user'] },
         { id: 'members', icon: 'fa-users', text: 'Data Anggota', roles: ['admin'] },
-        { id: 'backstage', icon: 'fa-cogs', text: 'Backstage', roles: ['admin', 'user'] },
         { id: 'activities', icon: 'fa-calendar-alt', text: 'Kegiatan', roles: ['admin', 'user'] },
         { id: 'attendance', icon: 'fa-user-check', text: 'Absen Anggota', roles: ['admin', 'user'] },
         { id: 'announcements', icon: 'fa-bullhorn', text: 'Pengumuman', roles: ['admin', 'user'] },
         { id: 'scripts', icon: 'fa-file-alt', text: 'Jendela Naskah', roles: ['admin', 'user'] },
         { id: 'gallery', icon: 'fa-images', text: 'Galeri', roles: ['admin', 'user'] },
-        { id: 'quiz', icon: 'fa-brain', text: 'Kuis Teater', roles: ['admin', 'user'] },
         { id: 'forum', icon: 'fa-comments', text: 'Forum Diskusi', roles: ['admin', 'user'] },
     ];
     
     const renderNav = () => {
         const createNavItem = (item) => {
-            if (state.currentUser && item.roles.includes(state.currentUser.role)) {
+            if (appState.currentUser && item.roles.includes(appState.currentUser.role)) {
                 return `
                     <a href="#" data-page="${item.id}" class="sidebar-item flex items-center p-3 rounded-md mb-2">
                         <i class="fas ${item.icon} w-6"></i>
@@ -452,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     const navigate = (pageId) => {
-        state.currentPage = pageId;
+        appState.currentPage = pageId;
         const pageTitleText = navItems.find(item => item.id === pageId)?.text || 'Dashboard';
         pageTitle.textContent = pageTitleText;
         contentArea.innerHTML = '';
@@ -469,28 +447,36 @@ document.addEventListener('DOMContentLoaded', () => {
             el.classList.toggle('active', el.dataset.page === pageId);
         });
         mobileSidebar.classList.add('hidden');
+        toggleAdminElements();
     };
 
-    // ===== FUNGSI RENDER HALAMAN =====
-    window.renderDashboardPage = () => {
+    // ===== FUNGSI RENDER HALAMAN (ASYNCHRONOUS DENGAN SUPABASE) =====
+    window.renderDashboardPage = async () => {
         const upcomingActivityEl = document.getElementById('upcoming-activity');
         const latestAnnouncementEl = document.getElementById('latest-announcement');
         const totalMembersEl = document.getElementById('total-members');
-        const now = new Date();
-        const upcoming = state.activities.filter(a => new Date(a.date) >= now).sort((a,b) => new Date(a.date) - new Date(b.date))[0];
-        if (upcoming) upcomingActivityEl.innerHTML = `<p class="font-semibold">${upcoming.title}</p><p class="text-sm text-gray-500">${new Date(upcoming.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>`;
+        const now = new Date().toISOString();
+
+        const { data: activities } = await supabaseClient.from('activities').select('*').gte('date', now).order('date', { ascending: true }).limit(1);
+        if (activities && activities.length > 0) upcomingActivityEl.innerHTML = `<p class="font-semibold">${activities[0].title}</p><p class="text-sm text-gray-500">${new Date(activities[0].date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>`;
         else upcomingActivityEl.textContent = 'Tidak ada kegiatan terdekat.';
-        const latest = state.announcements[state.announcements.length - 1];
-        if (latest) latestAnnouncementEl.innerHTML = `<p class="font-semibold">${latest.title}</p><p class="text-sm text-gray-500 truncate">${latest.content}</p>`;
+
+        const { data: announcements } = await supabaseClient.from('announcements').select('*').order('created_at', { ascending: false }).limit(1);
+        if (announcements && announcements.length > 0) latestAnnouncementEl.innerHTML = `<p class="font-semibold">${announcements[0].title}</p><p class="text-sm text-gray-500 truncate">${announcements[0].content}</p>`;
         else latestAnnouncementEl.textContent = 'Tidak ada pengumuman.';
-        totalMembersEl.textContent = state.users.filter(u => u.role === 'user').length;
+        
+        const { count } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'user');
+        if (count !== null) totalMembersEl.textContent = count;
     };
     
-    window.renderMembersPage = () => {
+    window.renderMembersPage = async () => {
         const listEl = document.getElementById('members-list');
-        listEl.innerHTML = state.users.map(user => `
+        const { data: users, error } = await supabaseClient.from('profiles').select('*');
+        if (error) return console.error('Error fetching members:', error);
+        
+        listEl.innerHTML = users.map(user => `
             <tr class="border-b">
-                <td class="p-3">${user.name}</td>
+                <td class="p-3">${user.full_name}</td>
                 <td class="p-3">${user.username}</td>
                 <td class="p-3"><span class="px-2 py-1 rounded-full text-xs ${user.role === 'admin' ? 'bg-amber-600 text-white' : 'bg-green-500 text-white'}">${user.role}</span></td>
                 <td class="p-3">
@@ -499,9 +485,12 @@ document.addEventListener('DOMContentLoaded', () => {
             </tr>`).join('');
     };
 
-    window.renderActivitiesPage = () => {
+    window.renderActivitiesPage = async () => {
         const listEl = document.getElementById('activities-list');
-        listEl.innerHTML = state.activities.map(act => `
+        const { data: activities, error } = await supabaseClient.from('activities').select('*').order('date', { ascending: false });
+        if (error) return console.error(error);
+        
+        listEl.innerHTML = (activities || []).map(act => `
             <div class="card-bg p-4 rounded-lg">
                 <p class="font-bold">${act.title}</p>
                 <p class="text-sm text-gray-500"><i class="fas fa-calendar-alt mr-2"></i>${new Date(act.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
@@ -511,25 +500,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button data-id="${act.id}" class="delete-activity-btn text-red-500 hover:text-red-400"><i class="fas fa-trash"></i></button>
                 </div>
             </div>`).join('') || '<p>Belum ada kegiatan yang dijadwalkan.</p>';
-        toggleAdminElements();
     };
 
-    window.renderAttendancePage = () => {
+    window.renderAttendancePage = async () => {
         const listEl = document.getElementById('attendance-list');
-        if (state.currentUser.role === 'admin') {
-            listEl.innerHTML = state.activities.map(act => {
-                const attendees = state.attendance.filter(a => a.activityId === act.id);
-                return `
+        const { data: activities } = await supabaseClient.from('activities').select('*').order('date', { ascending: false });
+
+        if (appState.currentUser.role === 'admin') {
+            const { data: profiles } = await supabaseClient.from('profiles').select('id, full_name').eq('role', 'user');
+            const totalMembers = profiles ? profiles.length : 0;
+            
+            let html = '';
+            for (const act of (activities || [])) {
+                const { data: attendees } = await supabaseClient.from('attendance').select('user_id, profiles(full_name)').eq('activity_id', act.id);
+                html += `
                     <div class="card-bg p-4 rounded-lg mb-4">
                         <h3 class="font-bold text-lg">${act.title} - ${new Date(act.date).toLocaleDateString('id-ID')}</h3>
-                        <p class="text-sm mb-2">${attendees.length} dari ${state.users.filter(u=>u.role==='user').length} anggota hadir.</p>
-                        <ul class="list-disc list-inside text-gray-600">${attendees.map(a => `<li>${state.users.find(u => u.id === a.userId)?.name || 'Unknown'}</li>`).join('')}</ul>
+                        <p class="text-sm mb-2">${(attendees || []).length} dari ${totalMembers} anggota hadir.</p>
+                        <ul class="list-disc list-inside text-gray-600">${(attendees || []).map(a => `<li>${a.profiles.full_name}</li>`).join('')}</ul>
                     </div>`;
-            }).join('') || '<p>Belum ada kegiatan untuk diabsen.</p>';
+            }
+            listEl.innerHTML = html || '<p>Belum ada kegiatan untuk diabsen.</p>';
         } else {
-            const now = new Date().setHours(0,0,0,0);
-            listEl.innerHTML = state.activities.filter(act => new Date(act.date).setHours(0,0,0,0) <= now).map(act => {
-                const hasAttended = state.attendance.some(a => a.activityId === act.id && a.userId === state.currentUser.id);
+             const { data: userAttendance } = await supabaseClient.from('attendance').select('activity_id').eq('user_id', appState.currentUser.id);
+             const attendedActivityIds = (userAttendance || []).map(a => a.activity_id);
+             const now = new Date().setHours(0,0,0,0);
+            
+            listEl.innerHTML = (activities || []).filter(act => new Date(act.date).setHours(0,0,0,0) <= now).map(act => {
+                const hasAttended = attendedActivityIds.includes(act.id);
                 return `
                     <div class="card-bg p-4 rounded-lg mb-4 flex justify-between items-center">
                         <div>
@@ -544,189 +542,162 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    window.renderAnnouncementsPage = () => {
+    window.renderAnnouncementsPage = async () => {
         const listEl = document.getElementById('announcements-list');
-        listEl.innerHTML = [...state.announcements].reverse().map(ann => `
+        const { data } = await supabaseClient.from('announcements').select('*').order('created_at', { ascending: false });
+        
+        listEl.innerHTML = (data || []).map(ann => `
             <div class="card-bg p-4 rounded-lg">
                 <div class="flex justify-between items-start">
                     <div>
                         <h3 class="font-bold text-lg">${ann.title}</h3>
-                        <p class="text-sm text-gray-500 mb-2">Diposting pada ${new Date(ann.timestamp).toLocaleString('id-ID')}</p>
+                        <p class="text-sm text-gray-500 mb-2">Diposting pada ${new Date(ann.created_at).toLocaleString('id-ID')}</p>
                     </div>
                     <button data-id="${ann.id}" class="delete-announcement-btn admin-only text-red-500 hover:text-red-400 text-sm"><i class="fas fa-trash"></i></button>
                 </div>
                 <p>${ann.content}</p>
             </div>`).join('') || '<p>Belum ada pengumuman.</p>';
-        toggleAdminElements();
     };
 
-    window.renderScriptsPage = () => {
+    window.renderScriptsPage = async () => {
         const listEl = document.getElementById('scripts-list');
-        listEl.innerHTML = state.scripts.map(script => `
+        const { data } = await supabaseClient.from('scripts').select('*');
+        
+        listEl.innerHTML = (data || []).map(script => `
             <div data-id="${script.id}" class="open-script-btn card-bg p-4 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition">
                 <i class="fas fa-file-alt text-4xl accent-text mb-2"></i>
                 <p class="font-bold truncate">${script.title}</p>
-                <p class="text-xs text-gray-500 truncate">${script.fileName}</p>
+                <p class="text-xs text-gray-500 truncate">${script.file_name}</p>
             </div>`).join('') || '<p>Belum ada naskah yang diunggah.</p>';
     };
     
-    window.renderGalleryPage = () => {
+    window.renderGalleryPage = async () => {
         const listEl = document.getElementById('gallery-list');
-        listEl.innerHTML = state.gallery.map(img => `
+        const { data } = await supabaseClient.from('gallery').select('*').order('created_at', { ascending: false });
+
+        listEl.innerHTML = (data || []).map(img => `
             <div class="relative group">
-                <img src="${img.imageUrl}" alt="${img.caption}" class="w-full h-48 object-cover rounded-lg">
+                <img src="${img.image_url}" alt="${img.caption}" class="w-full h-48 object-cover rounded-lg">
                 <div class="absolute inset-0 bg-black bg-opacity-50 flex items-end p-2 opacity-0 group-hover:opacity-100 transition">
                     <p class="text-white text-sm">${img.caption}</p>
                 </div>
-                 <button data-id="${img.id}" class="delete-gallery-btn admin-only absolute top-2 right-2 text-white bg-red-600 rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"><i class="fas fa-times text-xs"></i></button>
+                 <button data-id="${img.id}" data-path="${img.file_path}" class="delete-gallery-btn admin-only absolute top-2 right-2 text-white bg-red-600 rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"><i class="fas fa-times text-xs"></i></button>
             </div>`).join('') || '<p>Belum ada foto di galeri.</p>';
-        toggleAdminElements();
     };
     
-    window.renderForumPage = () => {
+    let forumSubscription = null;
+    const cleanupForum = () => {
+        if (forumSubscription) {
+            supabaseClient.removeChannel(forumSubscription);
+            forumSubscription = null;
+        }
+    };
+    window.renderForumPage = async () => {
         const messagesEl = document.getElementById('forum-messages');
-        messagesEl.innerHTML = state.forumMessages.map(msg => {
-            const user = state.users.find(u => u.id === msg.userId);
-            const isCurrentUser = msg.userId === state.currentUser.id;
-            return `
-                <div class="flex ${isCurrentUser ? 'justify-end' : 'justify-start'}">
-                    <div class="max-w-xs md:max-w-md">
-                        <p class="text-xs ${isCurrentUser ? 'text-right' : 'text-left'} text-gray-500 mb-1">${user ? user.name : 'Unknown'} <span class="text-gray-400">${new Date(msg.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span></p>
-                        <div class="px-4 py-2 rounded-lg ${isCurrentUser ? 'accent-bg text-white' : 'bg-gray-200'}">
-                            ${msg.message}
+        const { data, error } = await supabaseClient.from('forum').select('*, profiles(full_name)').order('created_at');
+        if (error) return;
+        
+        const renderMessages = (messages) => {
+            messagesEl.innerHTML = messages.map(msg => {
+                const isCurrentUser = msg.user_id === appState.currentUser.id;
+                return `
+                    <div class="flex ${isCurrentUser ? 'justify-end' : 'justify-start'}">
+                        <div class="max-w-xs md:max-w-md">
+                            <p class="text-xs ${isCurrentUser ? 'text-right' : 'text-left'} text-gray-500 mb-1">${msg.profiles.full_name || 'Unknown'} <span class="text-gray-400">${new Date(msg.created_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span></p>
+                            <div class="px-4 py-2 rounded-lg ${isCurrentUser ? 'accent-bg text-white' : 'bg-gray-200'}">
+                                ${msg.message}
+                            </div>
                         </div>
-                    </div>
-                </div>`;
-        }).join('');
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-    };
-    
-    window.renderBackstagePage = () => {
-        const isAdmin = state.currentUser.role === 'admin';
-        const renderList = (type, listEl) => {
-            listEl.innerHTML = state[type].map(item => `
-                <li class="flex justify-between items-center bg-gray-50 p-2 rounded">
-                    <span>${item.name} <span class="text-xs text-gray-500">(${item.status || 'Tersedia'})</span></span>
-                    ${isAdmin ? `<button data-id="${item.id}" data-type="${type}" class="delete-backstage-item-btn text-red-500 hover:text-red-700 text-sm"><i class="fas fa-times"></i></button>` : ''}
-                </li>
-            `).join('') || '<li class="text-sm text-gray-500">Belum ada data.</li>';
+                    </div>`;
+            }).join('');
+            messagesEl.scrollTop = messagesEl.scrollHeight;
         };
-        renderList('costumes', document.getElementById('costumes-list'));
-        renderList('props', document.getElementById('props-list'));
-        toggleAdminElements();
+        renderMessages(data || []);
+
+        cleanupForum(); 
+        forumSubscription = supabaseClient.channel('public:forum')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'forum' }, async (payload) => {
+                 const { data: profile } = await supabaseClient.from('profiles').select('full_name').eq('id', payload.new.user_id).single();
+                 if (profile) payload.new.profiles = profile;
+                 
+                 const { data: existingMessages } = await supabaseClient.from('forum').select('*, profiles(full_name)').order('created_at');
+                 renderMessages(existingMessages || []);
+
+            })
+            .subscribe();
     };
     
-    window.renderQuizPage = () => {
-        const listEl = document.getElementById('quiz-list');
-        listEl.innerHTML = state.quizzes.map(quiz => {
-            const submission = state.quizSubmissions.find(s => s.quizId === quiz.id && s.userId === state.currentUser.id);
-            return `
-                <div class="border border-gray-200 p-4 rounded-lg flex justify-between items-center">
-                    <div>
-                        <h3 class="font-bold">${quiz.title}</h3>
-                        <p class="text-sm text-gray-500">${quiz.questions.length} Pertanyaan</p>
-                    </div>
-                    <div>
-                        ${submission ?
-                            `<span class="font-bold text-lg accent-text">Skor: ${submission.score}%</span>` :
-                            `<button data-id="${quiz.id}" class="take-quiz-btn accent-bg text-white font-bold py-2 px-4 rounded-md text-sm">Kerjakan</button>`
-                        }
-                        <button data-id="${quiz.id}" class="delete-quiz-btn admin-only text-red-500 hover:text-red-700 ml-4"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>
-            `;
-        }).join('') || '<p class="text-gray-500">Belum ada kuis yang dibuat.</p>';
-        toggleAdminElements();
-    };
-
     const openModal = (title, content, onSave) => {
         modalContainer.innerHTML = `
-            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg text-gray-800">
+            <div class="card-bg rounded-lg shadow-xl w-full max-w-lg relative max-h-[90vh] flex flex-col">
                 <div class="p-4 border-b flex justify-between items-center">
                     <h3 class="text-lg font-bold">${title}</h3>
-                    <button id="close-modal-btn" class="text-gray-400 hover:text-gray-800 text-2xl">&times;</button>
+                    <button id="modal-close-btn" class="text-2xl hover:text-red-500">&times;</button>
                 </div>
-                <div class="p-4 overflow-y-auto max-h-[70vh]">${content}</div>
-                <div class="p-4 border-t text-right">
-                    <button id="cancel-modal-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md mr-2">Batal</button>
-                    <button id="save-modal-btn" class="accent-bg hover:bg-yellow-400 text-white font-bold py-2 px-4 rounded-md">Simpan</button>
+                <div class="p-6 overflow-y-auto">${content}</div>
+                <div class="p-4 bg-gray-50 border-t flex justify-end gap-2">
+                    <button id="modal-cancel-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-md text-sm">Batal</button>
+                    ${onSave ? '<button id="modal-save-btn" class="accent-bg text-white font-bold py-2 px-4 rounded-md text-sm">Simpan</button>' : ''}
                 </div>
             </div>`;
         modalContainer.classList.remove('hidden');
-        document.getElementById('close-modal-btn').onclick = closeModal;
-        document.getElementById('cancel-modal-btn').onclick = closeModal;
+        document.getElementById('modal-close-btn').onclick = closeModal;
+        document.getElementById('modal-cancel-btn').onclick = closeModal;
         
-        const saveBtn = document.getElementById('save-modal-btn');
-        if (onSave) {
+        const saveBtn = document.getElementById('modal-save-btn');
+        if (onSave && saveBtn) {
             saveBtn.onclick = onSave;
-        } else {
-            saveBtn.style.display = 'none';
-            document.getElementById('cancel-modal-btn').textContent = 'Tutup';
         }
     };
+
     const closeModal = () => {
         modalContainer.classList.add('hidden');
         modalContainer.innerHTML = '';
     };
 
-    const login = (username, password) => {
-        const user = state.users.find(u => u.username === username && u.password === password);
-        if (user) {
-            state.currentUser = user;
-            authView.classList.add('hidden');
-            mainView.classList.remove('hidden');
-            userGreeting.textContent = `Halo, ${user.name}`;
-            renderNav();
-            navigate('dashboard');
-            saveDatabase();
-        } else {
-            alert('Username atau password salah!');
-        }
+    const login = async (username, password) => {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: username + '@rajawaliku.teater', // Gunakan email dummy
+            password: password,
+        });
+        if (error) alert('Username atau password salah! ' + error.message);
     };
     
-    const register = (name, username, password) => {
-        if (state.users.some(u => u.username === username)) {
-            alert('Username sudah digunakan!');
-            return;
+    const register = async (name, username, password) => {
+        const { data: existingUser } = await supabaseClient.from('profiles').select('username').eq('username', username).single();
+        if (existingUser) return alert('Username sudah digunakan!');
+
+        const { error } = await supabaseClient.auth.signUp({
+            email: username + '@rajawaliku.teater',
+            password: password,
+            options: { data: { full_name: name, username: username } }
+        });
+
+        if (error) alert('Gagal mendaftar: ' + error.message);
+        else {
+            alert('Pendaftaran berhasil! Silakan login.');
+            registerFormEl.classList.add('hidden');
+            loginFormEl.classList.remove('hidden');
         }
-        const newUser = { id: Date.now(), name, username, password, role: 'user' };
-        state.users.push(newUser);
-        saveDatabase();
-        alert('Pendaftaran berhasil! Silakan login.');
-        loginForm.classList.remove('hidden');
-        registerForm.classList.add('hidden');
     };
 
-    const logout = () => {
-        state.currentUser = null;
+    const logout = async () => {
+        await supabaseClient.auth.signOut();
+        appState.currentUser = null;
         authView.classList.remove('hidden');
         mainView.classList.add('hidden');
-        saveDatabase();
+        cleanupForum();
     };
     
     const toggleAdminElements = () => {
         document.querySelectorAll('.admin-only').forEach(el => {
-            el.style.display = (state.currentUser && state.currentUser.role === 'admin') ? '' : 'none';
+            el.style.display = (appState.currentUser && appState.currentUser.role === 'admin') ? '' : 'none';
         });
     };
 
-    // ===== HELPER FUNCTION =====
-    const dataURLtoBlob = (dataurl) => {
-        const arr = dataurl.split(','), mimeMatch = arr[0].match(/:(.*?);/);
-        if (!mimeMatch) return null;
-        const mime = mimeMatch[1],
-            bstr = atob(arr[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        while(n--){
-            u8arr[n] = bstr.charCodeAt(n);
-        }
-        return new Blob([u8arr], {type:mime});
-    }
-
     // ===== EVENT LISTENERS =====
-    showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); loginForm.classList.add('hidden'); registerForm.classList.remove('hidden'); });
-    showLoginLink.addEventListener('click', (e) => { e.preventDefault(); loginForm.classList.remove('hidden'); registerForm.classList.add('hidden'); });
+    showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); loginFormEl.classList.add('hidden'); registerFormEl.classList.remove('hidden'); });
+    showLoginLink.addEventListener('click', (e) => { e.preventDefault(); loginFormEl.classList.remove('hidden'); registerFormEl.classList.add('hidden'); });
     document.getElementById('loginForm').addEventListener('submit', (e) => {
         e.preventDefault();
         login(document.getElementById('login-username').value, document.getElementById('login-password').value);
@@ -738,7 +709,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('logout-btn').addEventListener('click', logout);
     menuToggle.addEventListener('click', () => mobileSidebar.classList.remove('hidden'));
     closeMenu.addEventListener('click', () => mobileSidebar.classList.add('hidden'));
-    mobileSidebar.addEventListener('click', (e) => { if (e.target === mobileSidebar) mobileSidebar.classList.add('hidden'); });
     document.body.addEventListener('click', (e) => {
         const sidebarLink = e.target.closest('.sidebar-item');
         if (sidebarLink) {
@@ -747,216 +717,194 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    contentArea.addEventListener('click', e => {
+    contentArea.addEventListener('click', async e => {
+        // Handle Delete User
         if (e.target.closest('.delete-user-btn')) {
-            const userId = parseInt(e.target.closest('.delete-user-btn').dataset.userid);
-            if (confirm('Anda yakin ingin menghapus anggota ini?')) { state.users = state.users.filter(u => u.id !== userId); saveDatabase(); renderMembersPage(); }
+            const userId = e.target.closest('.delete-user-btn').dataset.userid;
+            if (confirm('Anda yakin ingin menghapus anggota ini?')) {
+                alert("Fungsi hapus user auth memerlukan konfigurasi sisi server. Ini hanya akan menghapus profil dari database.");
+                const { error } = await supabaseClient.from('profiles').delete().eq('id', userId);
+                if (error) alert('Gagal menghapus profil: ' + error.message);
+                else await renderMembersPage();
+            }
         }
         
+        // Handle Add Activity
         if (e.target.id === 'add-activity-btn') {
-            const content = `<div class="space-y-4"><div><label class="block mb-1">Judul Kegiatan</label><input type="text" id="modal-activity-title" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div><div><label class="block mb-1">Tanggal</label><input type="date" id="modal-activity-date" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div><div><label class="block mb-1">Waktu</label><input type="time" id="modal-activity-time" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div><div><label class="block mb-1">Deskripsi</label><textarea id="modal-activity-desc" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded" rows="3"></textarea></div></div>`;
-            openModal('Tambah Kegiatan Baru', content, () => { 
-                const newActivity = { id: Date.now(), title: document.getElementById('modal-activity-title').value, date: document.getElementById('modal-activity-date').value, time: document.getElementById('modal-activity-time').value, description: document.getElementById('modal-activity-desc').value };
-                if (newActivity.title && newActivity.date && newActivity.time) { state.activities.push(newActivity); saveDatabase(); renderActivitiesPage(); closeModal(); } else { alert('Harap isi semua kolom yang wajib diisi.'); }
+            const content = `<div class="space-y-4"><div><label class="block mb-1">Judul Kegiatan</label><input type="text" id="modal-activity-title" class="w-full px-3 py-2 bg-gray-100 border rounded"></div><div><label class="block mb-1">Tanggal</label><input type="date" id="modal-activity-date" class="w-full px-3 py-2 bg-gray-100 border rounded"></div><div><label class="block mb-1">Waktu</label><input type="time" id="modal-activity-time" class="w-full px-3 py-2 bg-gray-100 border rounded"></div><div><label class="block mb-1">Deskripsi</label><textarea id="modal-activity-desc" class="w-full px-3 py-2 bg-gray-100 border rounded" rows="3"></textarea></div></div>`;
+            openModal('Tambah Kegiatan Baru', content, async () => { 
+                const newActivity = { title: document.getElementById('modal-activity-title').value, date: document.getElementById('modal-activity-date').value, time: document.getElementById('modal-activity-time').value, description: document.getElementById('modal-activity-desc').value };
+                if (newActivity.title && newActivity.date && newActivity.time) { 
+                    await supabaseClient.from('activities').insert(newActivity);
+                    await renderActivitiesPage(); 
+                    closeModal();
+                } else { alert('Harap isi semua kolom.'); }
             });
         }
         
+        // Handle Delete Activity
         if (e.target.closest('.delete-activity-btn')) {
             const actId = parseInt(e.target.closest('.delete-activity-btn').dataset.id);
-            if (confirm('Anda yakin ingin menghapus kegiatan ini?')) { state.activities = state.activities.filter(a => a.id !== actId); saveDatabase(); renderActivitiesPage(); }
+            if (confirm('Yakin hapus kegiatan ini?')) { 
+                await supabaseClient.from('attendance').delete().eq('activity_id', actId);
+                await supabaseClient.from('activities').delete().eq('id', actId);
+                await renderActivitiesPage();
+            }
         }
         
+        // Handle Attend
         if(e.target.closest('.attend-btn')) {
             const btn = e.target.closest('.attend-btn');
             const actId = parseInt(btn.dataset.id);
-            if (!state.attendance.some(a => a.activityId === actId && a.userId === state.currentUser.id)) {
-                state.attendance.push({ id: Date.now(), activityId: actId, userId: state.currentUser.id, timestamp: new Date() });
-                saveDatabase(); renderAttendancePage();
-            }
+            await supabaseClient.from('attendance').insert({ activity_id: actId, user_id: appState.currentUser.id });
+            await renderAttendancePage();
         }
 
+        // Handle Add Announcement
         if (e.target.id === 'add-announcement-btn') {
-            const content = `<div class="space-y-4"><div><label class="block mb-1">Judul Pengumuman</label><input type="text" id="modal-announcement-title" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded"></div><div><label class="block mb-1">Isi Pengumuman</label><textarea id="modal-announcement-content" class="w-full px-3 py-2 bg-gray-100 text-gray-800 border rounded" rows="5"></textarea></div></div>`;
-            openModal('Buat Pengumuman Baru', content, () => {
-                const newAnnouncement = { id: Date.now(), title: document.getElementById('modal-announcement-title').value, content: document.getElementById('modal-announcement-content').value, timestamp: new Date() };
-                if (newAnnouncement.title && newAnnouncement.content) { state.announcements.push(newAnnouncement); saveDatabase(); renderAnnouncementsPage(); closeModal(); } else { alert('Judul dan isi tidak boleh kosong.'); }
+            const content = `<div class="space-y-4"><div><label class="block mb-1">Judul</label><input type="text" id="modal-ann-title" class="w-full px-3 py-2 bg-gray-100 border rounded"></div><div><label class="block mb-1">Isi</label><textarea id="modal-ann-content" class="w-full px-3 py-2 bg-gray-100 border rounded" rows="5"></textarea></div></div>`;
+            openModal('Buat Pengumuman', content, async () => {
+                const newAnn = { title: document.getElementById('modal-ann-title').value, content: document.getElementById('modal-ann-content').value, user_id: appState.currentUser.id };
+                if (newAnn.title && newAnn.content) {
+                    await supabaseClient.from('announcements').insert(newAnn);
+                    await renderAnnouncementsPage(); 
+                    closeModal();
+                } else { alert('Judul dan isi tidak boleh kosong.'); }
             });
         }
         
+        // Handle Delete Announcement
         if (e.target.closest('.delete-announcement-btn')) {
             const annId = parseInt(e.target.closest('.delete-announcement-btn').dataset.id);
-            if(confirm('Yakin hapus pengumuman ini?')) { state.announcements = state.announcements.filter(a => a.id !== annId); saveDatabase(); renderAnnouncementsPage(); }
-        }
-        
-        if (e.target.id === 'add-script-btn') {
-            const content = `<div class="space-y-4"><div><label class="block mb-1">Judul Naskah</label><input type="text" id="modal-script-title" class="w-full px-3 py-2 bg-gray-100 border rounded"></div><div><label class="block mb-1">Pilih File Naskah</label><input type="file" id="modal-script-file" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100"></div></div>`;
-            openModal('Unggah Naskah Baru', content, () => {
-                const title = document.getElementById('modal-script-title').value;
-                const fileInput = document.getElementById('modal-script-file');
-                const file = fileInput.files[0];
-                if (title && file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        const newScript = { id: Date.now(), title: title, fileName: file.name, fileData: event.target.result };
-                        state.scripts.push(newScript);
-                        saveDatabase(); renderScriptsPage(); closeModal();
-                    };
-                    reader.readAsDataURL(file);
-                } else { alert('Judul dan file naskah tidak boleh kosong.'); }
-            });
-        }
-        
-        if (e.target.closest('.open-script-btn')) {
-            const scriptId = parseInt(e.target.closest('.open-script-btn').dataset.id);
-            const script = state.scripts.find(s => s.id === scriptId);
-            if (script) {
-                const modalContent = `<p class="mb-4">File: <strong>${script.fileName}</strong></p><button id="download-script-btn" class="accent-bg text-white font-bold py-2 px-4 rounded-md"><i class="fas fa-download mr-2"></i>Unduh Naskah</button><div class="admin-only mt-4 text-right"><button id="delete-script-from-modal" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md text-sm">Hapus Naskah</button></div>`;
-                openModal(`Naskah: ${script.title}`, modalContent, null);
-                document.getElementById('download-script-btn').onclick = () => {
-                    const blob = dataURLtoBlob(script.fileData);
-                    if (blob) {
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        a.download = script.fileName;
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                        a.remove();
-                    } else { alert('Gagal memproses file untuk diunduh.'); }
-                };
-                const deleteBtn = document.getElementById('delete-script-from-modal');
-                if (deleteBtn) {
-                    deleteBtn.onclick = () => {
-                        if (confirm('Anda yakin ingin menghapus naskah ini?')) { state.scripts = state.scripts.filter(s => s.id !== scriptId); saveDatabase(); renderScriptsPage(); closeModal(); }
-                    };
-                }
-                toggleAdminElements();
+            if(confirm('Yakin hapus pengumuman?')) { 
+                await supabaseClient.from('announcements').delete().eq('id', annId);
+                await renderAnnouncementsPage();
             }
         }
         
+        // Handle Add Script
+        if (e.target.id === 'add-script-btn') {
+            const content = `<div class="space-y-4"><div><label class="block mb-1">Judul Naskah</label><input type="text" id="modal-script-title" class="w-full px-3 py-2 bg-gray-100 border rounded"></div><div><label class="block mb-1">Pilih File</label><input type="file" id="modal-script-file" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100"></div></div>`;
+            openModal('Unggah Naskah', content, async () => {
+                const title = document.getElementById('modal-script-title').value;
+                const file = document.getElementById('modal-script-file').files[0];
+                if (title && file) {
+                    const filePath = `scripts/${Date.now()}_${file.name}`;
+                    const { error: uploadError } = await supabaseClient.storage.from('documents').upload(filePath, file);
+                    if (uploadError) return alert('Gagal unggah file: ' + uploadError.message);
+                    
+                    await supabaseClient.from('scripts').insert({ title: title, file_name: file.name, file_path: filePath });
+                    await renderScriptsPage(); 
+                    closeModal();
+                } else { alert('Judul dan file tidak boleh kosong.'); }
+            });
+        }
+        
+        // Handle Open/Download Script
+        if (e.target.closest('.open-script-btn')) {
+            const scriptId = parseInt(e.target.closest('.open-script-btn').dataset.id);
+            const { data: script } = await supabaseClient.from('scripts').select('*').eq('id', scriptId).single();
+            if (script) {
+                const modalContent = `<p class="mb-4">File: <strong>${script.file_name}</strong></p><button id="download-script-btn" class="accent-bg text-white font-bold py-2 px-4 rounded-md"><i class="fas fa-download mr-2"></i>Unduh</button>`;
+                openModal(`Naskah: ${script.title}`, modalContent, null);
+                document.getElementById('download-script-btn').onclick = async () => {
+                    const { data, error } = await supabaseClient.storage.from('documents').download(script.file_path);
+                    if (error) return alert('Gagal mengunduh: ' + error.message);
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(data);
+                    a.download = script.file_name;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                };
+            }
+        }
+        
+        // Handle Add Gallery Photo
         if (e.target.id === 'add-gallery-btn') {
-            const content = `<div class="space-y-4"><div><label class="block mb-1">Pilih File Gambar</label><input type="file" id="modal-gallery-file" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100" accept="image/*"></div><div><label class="block mb-1">Keterangan</label><input type="text" id="modal-gallery-caption" class="w-full px-3 py-2 bg-gray-100 border rounded"></div><div class="mt-2"><img id="modal-image-preview" src="" alt="Pratinjau" class="max-h-40 rounded hidden mx-auto"></div></div>`;
-            openModal('Unggah Foto Baru', content, () => {
+            const content = `<div class="space-y-4"><div><label class="block mb-1">Pilih Gambar</label><input type="file" id="modal-gallery-file" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0" accept="image/*"></div><div><label class="block mb-1">Keterangan</label><input type="text" id="modal-gallery-caption" class="w-full px-3 py-2 bg-gray-100 border rounded"></div></div>`;
+            openModal('Unggah Foto', content, async () => {
                 const caption = document.getElementById('modal-gallery-caption').value;
-                const fileInput = document.getElementById('modal-gallery-file');
-                const preview = document.getElementById('modal-image-preview');
-                if (fileInput.files[0] && caption) {
-                    const newImage = { id: Date.now(), imageUrl: preview.src, caption: caption };
-                    state.gallery.push(newImage); saveDatabase(); renderGalleryPage(); closeModal();
-                } else { alert('File Gambar dan Keterangan tidak boleh kosong.'); }
+                const file = document.getElementById('modal-gallery-file').files[0];
+                if (file && caption) {
+                    const filePath = `gallery/${Date.now()}_${file.name}`;
+                    const { error: uploadError } = await supabaseClient.storage.from('gallery').upload(filePath, file);
+                    if (uploadError) return alert('Gagal unggah foto: ' + uploadError.message);
+
+                    const { data: { publicUrl } } = supabaseClient.storage.from('gallery').getPublicUrl(filePath);
+
+                    await supabaseClient.from('gallery').insert({ caption, image_url: publicUrl, file_path: filePath });
+                    await renderGalleryPage(); 
+                    closeModal();
+                } else { alert('Gambar dan keterangan tidak boleh kosong.'); }
             });
-            const fileInput = document.getElementById('modal-gallery-file');
-            const preview = document.getElementById('modal-image-preview');
-            fileInput.onchange = () => {
-                const file = fileInput.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => { preview.src = e.target.result; preview.classList.remove('hidden'); }
-                    reader.readAsDataURL(file);
-                }
-            };
         }
         
+        // Handle Delete Gallery Photo
         if (e.target.closest('.delete-gallery-btn')) {
-            const imgId = parseInt(e.target.closest('.delete-gallery-btn').dataset.id);
-            if (confirm('Anda yakin ingin menghapus foto ini?')) { state.gallery = state.gallery.filter(img => img.id !== imgId); saveDatabase(); renderGalleryPage(); }
-        }
-
-        const addBackstageItem = (type, title) => {
-             const content = `<div class="space-y-4"><div><label class="block mb-1">Nama Item</label><input type="text" id="modal-item-name" class="w-full px-3 py-2 bg-gray-100 border rounded"></div><div><label class="block mb-1">Status/Keterangan</label><input type="text" id="modal-item-status" class="w-full px-3 py-2 bg-gray-100 border rounded"></div></div>`;
-            openModal(`Tambah ${title}`, content, () => {
-                const newItem = { id: Date.now(), name: document.getElementById('modal-item-name').value, status: document.getElementById('modal-item-status').value };
-                if (newItem.name) { state[type].push(newItem); saveDatabase(); renderBackstagePage(); closeModal(); } else { alert('Nama item tidak boleh kosong.'); }
-            });
-        };
-
-        if (e.target.id === 'add-costume-btn') addBackstageItem('costumes', 'Kostum');
-        if (e.target.id === 'add-prop-btn') addBackstageItem('props', 'Properti');
-
-        if (e.target.closest('.delete-backstage-item-btn')) {
-            const btn = e.target.closest('.delete-backstage-item-btn');
-            const id = parseInt(btn.dataset.id);
-            const type = btn.dataset.type;
-            state[type] = state[type].filter(item => item.id !== id);
-            saveDatabase();
-            renderBackstagePage();
-        }
-
-        if (e.target.id === 'add-quiz-btn') {
-            let questionCount = 1;
-            const getQuestionHTML = (index) => `<div class="question-block border-t pt-4 mt-4"><p class="font-semibold mb-2">Pertanyaan ${index}</p><input type="text" placeholder="Tulis pertanyaan..." class="modal-quiz-q w-full border p-2 rounded mb-2"><div class="grid grid-cols-2 gap-2">${[1,2,3,4].map(i => `<div class="flex items-center"><input type="radio" name="answer_${index}" value="${i-1}" class="modal-quiz-a-radio mr-2"><input type="text" placeholder="Opsi ${i}" class="modal-quiz-a w-full border p-2 rounded text-sm"></div>`).join('')}</div></div>`;
-            let content = `<div><label class="block mb-1">Judul Kuis</label><input type="text" id="modal-quiz-title" class="w-full px-3 py-2 bg-gray-100 border rounded"></div><div id="questions-container">${getQuestionHTML(1)}</div><button id="add-question-btn" type="button" class="mt-4 text-sm accent-bg text-white py-1 px-3 rounded">+ Tambah Pertanyaan</button>`;
-            openModal('Buat Kuis Baru', content, () => {
-                const newQuiz = { id: Date.now(), title: document.getElementById('modal-quiz-title').value, questions: [] };
-                document.querySelectorAll('.question-block').forEach((qBlock, index) => {
-                    const questionText = qBlock.querySelector('.modal-quiz-q').value;
-                    const options = Array.from(qBlock.querySelectorAll('.modal-quiz-a')).map(opt => opt.value);
-                    const correctIndex = qBlock.querySelector('.modal-quiz-a-radio:checked')?.value;
-                    if (questionText && options.every(o => o) && correctIndex) newQuiz.questions.push({ q: questionText, options: options, answer: parseInt(correctIndex) });
-                });
-                if (newQuiz.title && newQuiz.questions.length > 0) { state.quizzes.push(newQuiz); saveDatabase(); renderQuizPage(); closeModal(); } else { alert('Harap isi judul, minimal satu pertanyaan, semua opsi, dan pilih jawaban yang benar.'); }
-            });
-            document.getElementById('add-question-btn').onclick = () => { questionCount++; document.getElementById('questions-container').insertAdjacentHTML('beforeend', getQuestionHTML(questionCount)); };
-        }
-        
-        if (e.target.closest('.delete-quiz-btn')) {
-            const quizId = parseInt(e.target.closest('.delete-quiz-btn').dataset.id);
-            if(confirm('Yakin hapus kuis ini?')) { state.quizzes = state.quizzes.filter(q => q.id !== quizId); saveDatabase(); renderQuizPage(); }
-        }
-        
-        if (e.target.closest('.take-quiz-btn')) {
-            const quizId = parseInt(e.target.closest('.take-quiz-btn').dataset.id);
-            const quiz = state.quizzes.find(q => q.id === quizId);
-            const content = `<form id="quiz-form">${quiz.questions.map((q, index) => `<div class="mb-4"><p class="font-semibold">${index + 1}. ${q.q}</p><div class="mt-2 space-y-1">${q.options.map((opt, optIndex) => `<div><label><input type="radio" name="q_${index}" value="${optIndex}" required class="mr-2">${opt}</label></div>`).join('')}</div></div>`).join('')}</form>`;
-            openModal(`Kuis: ${quiz.title}`, content, () => {
-                let score = 0;
-                const form = document.getElementById('quiz-form');
-                quiz.questions.forEach((q, index) => {
-                    const selected = form.querySelector(`input[name="q_${index}"]:checked`);
-                    if (selected && parseInt(selected.value) === q.answer) score++;
-                });
-                const finalScore = Math.round((score / quiz.questions.length) * 100);
-                state.quizSubmissions.push({ id: Date.now(), quizId: quiz.id, userId: state.currentUser.id, score: finalScore });
-                saveDatabase();
-                alert(`Kuis selesai! Skor Anda: ${finalScore}%`);
-                renderQuizPage();
-                closeModal();
-            });
+            const btn = e.target.closest('.delete-gallery-btn');
+            const imgId = parseInt(btn.dataset.id);
+            const filePath = btn.dataset.path;
+            if (confirm('Yakin hapus foto ini?')) { 
+                await supabaseClient.storage.from('gallery').remove([filePath]);
+                await supabaseClient.from('gallery').delete().eq('id', imgId);
+                await renderGalleryPage();
+            }
         }
     });
     
-    document.body.addEventListener('submit', e => {
+    // Handle Forum Form Submission
+    document.body.addEventListener('submit', async e => {
         if (e.target.id === 'forum-form') {
             e.preventDefault();
             const input = document.getElementById('forum-input');
             const message = input.value.trim();
             if (message) {
-                state.forumMessages.push({ id: Date.now(), userId: state.currentUser.id, message: message, timestamp: new Date() });
-                saveDatabase();
-                renderForumPage();
+                await supabaseClient.from('forum').insert({ user_id: appState.currentUser.id, message: message });
                 input.value = '';
             }
         }
     });
 
-    // ===== INISIALISASI APLIKASI =====
-    const init = () => {
-        loadDatabase();
-        const loggedInUser = state.currentUser;
-        if (loggedInUser) {
-            login(loggedInUser.username, loggedInUser.password);
-        } else {
+    // ===== INISIALISASI APLIKASI & AUTENTIKASI =====
+    const handleAuthStateChange = async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+            const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+            if (profile) {
+                appState.currentUser = profile;
+                authView.classList.add('hidden');
+                mainView.classList.remove('hidden');
+                userGreeting.textContent = `Halo, ${profile.full_name}`;
+                renderNav();
+                navigate('dashboard');
+            }
+        } else if (event === 'SIGNED_OUT') {
+            appState.currentUser = null;
             authView.classList.remove('hidden');
             mainView.classList.add('hidden');
+            cleanupForum();
         }
     };
-    
-    init();
+
+    // Hanya jalankan jika supabaseClient berhasil diinisialisasi
+    if (supabaseClient) {
+        supabaseClient.auth.onAuthStateChange(handleAuthStateChange);
+        
+        const checkInitialSession = async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                handleAuthStateChange('SIGNED_IN', session);
+            } else {
+                authView.classList.remove('hidden');
+                mainView.classList.add('hidden');
+            }
+        };
+        
+        checkInitialSession();
+    }
 
 });
 </script>
 
 </body>
 </html>
+
